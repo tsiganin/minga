@@ -11,7 +11,7 @@ import jwt from "jsonwebtoken";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from "typeorm";
 
 @Entity()
 class User {
@@ -199,6 +199,13 @@ class GroupBuyOrderHistory {
   createdAt!: Date;
 }
 
+// --- Environment Variables ---
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error("JWT_SECRET environment variable is not set");
+
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+if (!ADMIN_PASSWORD) throw new Error("ADMIN_PASSWORD environment variable is not set");
+
 // --- Database Setup ---
 const isVercel = process.env.VERCEL === "1";
 const dbPath = isVercel ? "/tmp/database.sqlite" : "database.sqlite";
@@ -220,7 +227,7 @@ async function ensureDbInitialized() {
       const userRepo = AppDataSource.getRepository(User);
       const adminEmail = "admin";
       let admin = await userRepo.findOneBy({ email: adminEmail });
-      const passwordHash = await bcrypt.hash("seyyah2846", 10);
+      const passwordHash = await bcrypt.hash(ADMIN_PASSWORD!, 10);
 
       if (!admin) {
         console.log("Creating default admin user...");
@@ -240,8 +247,6 @@ async function ensureDbInitialized() {
     }
   }
 }
-
-const JWT_SECRET = process.env.JWT_SECRET || "minga-secret-key-2026";
 
 const app = express();
 
@@ -289,7 +294,7 @@ app.post("/auth/register", async (req, res) => {
     await buyerRepo.save(profile);
   }
 
-  const token = jwt.sign({ sub: user.id, email: user.email, role: user.role }, JWT_SECRET);
+  const token = jwt.sign({ sub: user.id, email: user.email, role: user.role }, JWT_SECRET!);
   res.json({ accessToken: token, role: user.role });
 });
 
@@ -302,7 +307,7 @@ app.post("/auth/login", async (req, res) => {
     return res.status(401).json({ message: "E-posta veya şifre hatalı" });
   }
 
-  const token = jwt.sign({ sub: user.id, email: user.email, role: user.role }, JWT_SECRET);
+  const token = jwt.sign({ sub: user.id, email: user.email, role: user.role }, JWT_SECRET!);
   res.json({ accessToken: token, role: user.role });
 });
 
@@ -311,7 +316,7 @@ const authenticate = (req: any, res: any, next: any) => {
   if (!authHeader) return res.status(401).json({ message: "Yetkisiz erişim" });
   const token = authHeader.split(" ")[1];
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
+    const payload = jwt.verify(token, JWT_SECRET!);
     req.user = payload;
     next();
   } catch (err) {
@@ -485,8 +490,7 @@ app.get("/api/admin/stats", authenticate, isAdmin, async (req, res) => {
 });
 
 app.get("/api/admin/users", authenticate, isAdmin, async (req, res) => {
-  const userRepo = AppDataSource.getRepository(User);
-  const users = await userRepo.find({ order: { createdAt: "DESC" } });
+  const users = await AppDataSource.getRepository(User).find({ order: { createdAt: "DESC" } });
   res.json(users);
 });
 
