@@ -12,7 +12,6 @@
     "start": "node --import tsx/esm api/index.ts"
   },
   "dependencies": {
-    "@devnomic/marquee": "^1.0.3",
     "@google/genai": "^1.29.0",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",
