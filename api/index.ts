@@ -251,7 +251,7 @@ async function ensureDbInitialized() {
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || "changeme";
+const JWT_SECRET = process.env.JWT_SECRET || "minga-secret-key-2026";
 
 const app = express();
 
@@ -770,7 +770,7 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // --- Server Başlatma (her ortamda çalışır) ---
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 async function startServer() {
   try {

@@ -4,269 +4,20 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown, Package, TrendingUp, Clock, LayoutGrid, Search, Users, Shield, Activity, Trash2, CheckCircle, XCircle, BarChart3, Mail, Edit, Upload, FileSpreadsheet, List, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
-// --- Components ---
+import { Navbar } from "@/src/components/layout/Navbar";
+import { HeroSection } from "@/src/components/layout/sections/HeroSection";
+import { SponsorsSection } from "@/src/components/layout/sections/SponsorsSection";
+import { BenefitsSection } from "@/src/components/layout/sections/BenefitsSection";
+import { FeaturesSection } from "@/src/components/layout/sections/FeaturesSection";
+import { ServicesSection } from "@/src/components/layout/sections/ServicesSection";
+import { TestimonialSection } from "@/src/components/layout/sections/TestimonialSection";
+import { TeamSection } from "@/src/components/layout/sections/TeamSection";
+import { CommunitySection } from "@/src/components/layout/sections/CommunitySection";
+import { PricingSection } from "@/src/components/layout/sections/PricingSection";
+import { ContactSection } from "@/src/components/layout/sections/ContactSection";
+import { FAQSection } from "@/src/components/layout/sections/FAQSection";
+import { FooterSection } from "@/src/components/layout/sections/FooterSection";
 
-function Navbar() {
-  const token = localStorage.getItem('token');
-  const userRole = localStorage.getItem('userRole');
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [categories, setCategories] = useState<any[]>([]);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    fetch('/api/categories')
-      .then(res => res.json())
-      .then(data => setCategories(data))
-      .catch(err => console.error(err));
-  }, []);
-
-  const isActive = (path: string) => location.pathname === path;
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/group-buys?search=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
-
-  const handleMouseEnter = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setIsDropdownOpen(true);
-  };
-
-  const handleMouseLeave = () => {
-    timeoutRef.current = setTimeout(() => {
-      setIsDropdownOpen(false);
-    }, 150);
-  };
-
-  const NavItem = ({ to, children, active, hasDropdown = false, colorClass = "bg-blue-600" }: any) => (
-    <motion.div 
-      whileHover="hover"
-      initial="initial"
-      className="relative"
-    >
-      {/* Backlight Halo Effect (Behind the button) */}
-      <div className="absolute -inset-1.5 rounded-2xl overflow-hidden pointer-events-none">
-        <motion.div
-          variants={{
-            initial: { x: '-150%', opacity: 0 },
-            hover: { x: '150%', opacity: 1 }
-          }}
-          transition={{ duration: 1.5, ease: "easeInOut", repeat: Infinity }}
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/40 to-transparent -skew-x-30 blur-md"
-        />
-      </div>
-
-      <Link 
-        to={to} 
-        className={`relative z-10 flex items-center gap-2 px-6 py-3 rounded-2xl border-2 transition-all duration-500 no-underline group ${
-          active 
-            ? `${colorClass} border-transparent text-white shadow-[0_0_20px_rgba(37,99,235,0.4)]` 
-            : `bg-white border-slate-100 text-slate-600 hover:border-blue-500/30 hover:text-blue-600 hover:shadow-[0_0_30px_rgba(37,99,235,0.1)]`
-        }`}
-      >
-        {/* Subtle Inner Blue Highlight */}
-        <motion.div
-          variants={{
-            initial: { x: '-150%', opacity: 0 },
-            hover: { x: '150%', opacity: 0.1 }
-          }}
-          transition={{ duration: 1.8, ease: "easeInOut", repeat: Infinity, repeatDelay: 0.3 }}
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-300/10 to-transparent -skew-x-30 pointer-events-none z-0"
-        />
-        
-        <span className="relative z-10 text-sm font-black tracking-tighter italic uppercase">
-          {children}
-        </span>
-        {hasDropdown && (
-          <ChevronDown className={`relative z-10 w-4 h-4 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-        )}
-      </Link>
-    </motion.div>
-  );
-
-  return (
-    <nav className="bg-white border-b border-slate-100 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-10">
-          <Link to="/" className="text-xl font-black tracking-tighter text-blue-600 italic no-underline flex-shrink-0">
-            MINGA-GPO
-          </Link>
-          <div className="hidden lg:flex items-center gap-6">
-            <NavItem to="/" active={isActive('/')} colorClass="bg-blue-600">
-              Ana Sayfa
-            </NavItem>
-            
-            <div 
-              className="relative"
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-            >
-              <NavItem to="/group-buys" active={isActive('/group-buys')} hasDropdown={true} colorClass="bg-indigo-600">
-                İlanlar
-              </NavItem>
-
-              <AnimatePresence>
-                {isDropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                    className="absolute top-full left-0 mt-2 w-64 bg-white rounded-3xl shadow-2xl shadow-blue-100 border border-slate-50 p-3 overflow-hidden"
-                  >
-                    <div className="space-y-1">
-                      <Link 
-                        to="/group-buys" 
-                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-blue-50 transition group no-underline"
-                        onClick={() => setIsDropdownOpen(false)}
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition">
-                          <LayoutGrid className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-black text-slate-900">Tüm İlanlar</p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Keşfetmeye başla</p>
-                        </div>
-                      </Link>
-
-                      {token && (
-                        <Link 
-                          to="/my-listings" 
-                          className="flex items-center gap-3 p-3 rounded-2xl hover:bg-emerald-50 transition group no-underline"
-                          onClick={() => setIsDropdownOpen(false)}
-                        >
-                          <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition">
-                            <Package className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-black text-slate-900">İlanlarım</p>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Kendi ilanların</p>
-                          </div>
-                        </Link>
-                      )}
-
-                      <Link 
-                        to="/group-buys?filter=popular" 
-                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-orange-50 transition group no-underline"
-                        onClick={() => setIsDropdownOpen(false)}
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 group-hover:bg-orange-600 group-hover:text-white transition">
-                          <TrendingUp className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-black text-slate-900">Popüler İlanlar</p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">En çok ilgi görenler</p>
-                        </div>
-                      </Link>
-
-                      <Link 
-                        to="/group-buys?filter=new" 
-                        className="flex items-center gap-3 p-3 rounded-2xl hover:bg-purple-50 transition group no-underline"
-                        onClick={() => setIsDropdownOpen(false)}
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition">
-                          <Clock className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-black text-slate-900">Yeni İlanlar</p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">En son eklenenler</p>
-                        </div>
-                      </Link>
-
-                      <div className="pt-2 mt-2 border-t border-slate-50">
-                        <p className="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategoriler</p>
-                        <div className="grid grid-cols-1 gap-1">
-                          {categories.length > 0 ? (
-                            categories.map(cat => (
-                              <Link 
-                                key={cat.id}
-                                to={`/group-buys?search=${cat.name}`}
-                                className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition no-underline group"
-                                onClick={() => setIsDropdownOpen(false)}
-                              >
-                                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition">
-                                  <List className="w-4 h-4" />
-                                </div>
-                                <span className="text-xs font-bold text-slate-600 group-hover:text-blue-600 transition">{cat.name}</span>
-                              </Link>
-                            ))
-                          ) : (
-                            SECTORS.slice(0, 5).map(s => (
-                              <Link 
-                                key={s}
-                                to={`/group-buys?search=${s}`}
-                                className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition no-underline group"
-                                onClick={() => setIsDropdownOpen(false)}
-                              >
-                                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition">
-                                  <List className="w-4 h-4" />
-                                </div>
-                                <span className="text-xs font-bold text-slate-600 group-hover:text-blue-600 transition">{s}</span>
-                              </Link>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {userRole === 'admin' && (
-              <NavItem to="/admin" active={isActive('/admin')} colorClass="bg-rose-600">
-                Admin Paneli
-              </NavItem>
-            )}
-          </div>
-        </div>
-
-        {/* Search Bar */}
-        <form onSubmit={handleSearch} className="flex-1 max-w-md relative group hidden sm:block">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-          <input 
-            type="text"
-            placeholder="İlan ara..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-6 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm"
-          />
-        </form>
-
-        <div className="flex items-center gap-4">
-          {token ? (
-            <>
-              <Link 
-                to="/profile" 
-                className={`text-sm font-bold transition no-underline px-4 py-2 rounded-xl ${isActive('/profile') ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-blue-600'}`}
-              >
-                Profilim
-              </Link>
-              <button 
-                onClick={() => { localStorage.clear(); window.location.href = '/'; }} 
-                className="text-sm font-bold text-slate-400 hover:text-red-500 transition px-4 py-2"
-              >
-                Çıkış
-              </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login" className="text-sm font-bold text-slate-600 hover:text-blue-600 transition no-underline">Giriş Yap</Link>
-              <Link to="/register" className="bg-blue-600 text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-100 no-underline">
-                Hemen Katıl
-              </Link>
-            </>
-          )}
-        </div>
-      </div>
-    </nav>
-  );
-}
 
 const SECTORS = [
   'Tekstil & Hazır Giyim', 'Elektronik & Teknoloji', 'Gıda & İçecek',
@@ -908,52 +659,26 @@ function HomePage() {
           </div>
         </div>
 
-        <footer className="py-12 text-center text-slate-400 text-sm border-t border-slate-100">
-          © 2026 Minga-Group Buy. Kolektif Alışverişin Yeni Nesil Platformu.
-        </footer>
+        <FooterSection />
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900 pt-20">
-      <div className="flex flex-col items-center justify-center text-center px-6 py-32 max-w-5xl mx-auto">
-        <h1 className="text-7xl font-black tracking-tighter mb-8 leading-tight">
-          Minga Gücüyle, <br />
-          <span className="text-blue-600">Birlikte Kazanın.</span>
-        </h1>
-        <p className="text-2xl text-slate-500 mb-12 max-w-2xl leading-relaxed font-medium">
-          Minga-Group Buy ile toplu alım gücünü keşfedin. Bireysel sınırları aşın, en kaliteli ürünlere topluluk indirimiyle ulaşın.
-        </p>
-        <div className="flex gap-6">
-          <Link to="/group-buys" className="bg-slate-900 text-white px-12 py-5 rounded-2xl font-black text-xl hover:scale-105 transition transform shadow-2xl no-underline">
-            Kampanyaları Keşfet
-          </Link>
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-3 gap-10 px-10 pb-32 max-w-7xl mx-auto">
-        <div className="bg-white p-12 rounded-[3rem] shadow-sm border border-slate-100 text-center hover:shadow-xl transition-all">
-          <div className="text-5xl mb-8">🤝</div>
-          <h3 className="text-2xl font-black mb-4">Minga Ruhu</h3>
-          <p className="text-slate-500 text-lg leading-relaxed">Binlerce kişiyle tek yürek olun, pazarın en düşük fiyatlarını birlikte belirleyin.</p>
-        </div>
-        <div className="bg-white p-12 rounded-[3rem] shadow-sm border border-slate-100 text-center hover:shadow-xl transition-all">
-          <div className="text-5xl mb-8">💰</div>
-          <h3 className="text-2xl font-black mb-4">Ortak Tasarruf</h3>
-          <p className="text-slate-500 text-lg leading-relaxed">Aracıları devreden çıkarın, doğrudan üreticiden Minga güvencesiyle tasarruf edin.</p>
-        </div>
-        <div className="bg-white p-12 rounded-[3rem] shadow-sm border border-slate-100 text-center hover:shadow-xl transition-all">
-          <div className="text-5xl mb-8">🛡️</div>
-          <h3 className="text-2xl font-black mb-4">Güvenli Ticaret</h3>
-          <p className="text-slate-500 text-lg leading-relaxed">Ödemeniz havuzda bekler, ürün elinize ulaşıp onay vermeden satıcıya aktarılmaz.</p>
-        </div>
-      </div>
-
-      <footer className="py-12 text-center text-slate-400 text-sm border-t border-slate-100">
-        © 2026 Minga-Group Buy. Kolektif Alışverişin Yeni Nesil Platformu.
-      </footer>
-    </main>
+    <div className="min-h-screen bg-background">
+      <HeroSection />
+      <SponsorsSection />
+      <BenefitsSection />
+      <FeaturesSection />
+      <ServicesSection />
+      <TestimonialSection />
+      <TeamSection />
+      <CommunitySection />
+      <PricingSection />
+      <ContactSection />
+      <FAQSection />
+      <FooterSection />
+    </div>
   );
 }
 
