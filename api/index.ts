@@ -762,7 +762,7 @@ if (process.env.NODE_ENV !== "production") {
     appType: "spa",
   });
   app.use(vite.middlewares);
-} else if (!isVercel) {
+} else {
   const distPath = path.join(__dirname, "../dist");
   app.use(express.static(distPath));
   app.get("*", (req, res) => {
@@ -770,21 +770,21 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
+// --- Server Başlatma (her ortamda çalışır) ---
+const PORT = process.env.PORT || 3000;
+
 async function startServer() {
   try {
-    if (process.env.NODE_ENV !== "production") {
-      await ensureDbInitialized();
-      app.listen(PORT, "0.0.0.0", () => {
-        console.log(`Server running on http://localhost:${PORT}`);
-      });
-    }
+    await ensureDbInitialized();
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on port ${PORT}`);
+    });
   } catch (err) {
     console.error("Error during server startup", err);
+    process.exit(1);
   }
 }
 
-if (process.env.NODE_ENV !== "production") {
-  startServer();
-}
+startServer();
 
 export default app;
