@@ -259,9 +259,19 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
+// --- Middleware to ensure DB is initialized ---
+app.use(async (req, res, next) => {
+  try {
+    await ensureDbInitialized();
+    next();
+  } catch (err) {
+    console.error("Database initialization failed:", err);
+    res.status(500).json({ message: "Veritabanı bağlantı hatası", error: String(err) });
+  }
+});
+
 // --- Auth Routes ---
 app.post("/auth/register", async (req, res) => {
-  await ensureDbInitialized();
   const { email, password, role, fullName, companyName, phone, taxNumber } = req.body;
   const userRepo = AppDataSource.getRepository(User);
   
@@ -287,7 +297,6 @@ app.post("/auth/register", async (req, res) => {
 });
 
 app.post("/auth/login", async (req, res) => {
-  await ensureDbInitialized();
   const { email, password } = req.body;
   const userRepo = AppDataSource.getRepository(User);
   const user = await userRepo.findOneBy({ email });
