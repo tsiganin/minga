@@ -3,15 +3,15 @@
   "rewrites": [
     {
       "source": "/auth/:path*",
-      "destination": "/api/index.ts"
+      "destination": "/api"
     },
     {
       "source": "/api/:path*",
-      "destination": "/api/index.ts"
+      "destination": "/api"
     },
     {
       "source": "/profiles/:path*",
-      "destination": "/api/index.ts"
+      "destination": "/api"
     },
     {
       "source": "/(.*)",

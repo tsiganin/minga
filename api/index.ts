@@ -259,6 +259,17 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
+// --- Health Check ---
+app.get("/api/ping", (req, res) => {
+  res.json({ message: "pong", timestamp: new Date().toISOString() });
+});
+
+// --- Request Logger ---
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
 // --- Middleware to ensure DB is initialized ---
 app.use(async (req, res, next) => {
   try {
@@ -731,6 +742,19 @@ app.delete("/api/admin/categories/:id", authenticate, isAdmin, async (req, res) 
   res.json({ message: "Kategori silindi" });
 });
 
+// --- Admin Routes ---
+// ... (existing routes)
+
+// --- Global Error Handler ---
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error("Global Error Handler:", err);
+  res.status(500).json({ 
+    message: "Sunucu hatası oluştu", 
+    error: err.message || String(err),
+    stack: process.env.NODE_ENV === "production" ? undefined : err.stack
+  });
+});
+
 // --- Vite Middleware ---
 if (process.env.NODE_ENV !== "production") {
   const vite = await createViteServer({
@@ -738,7 +762,7 @@ if (process.env.NODE_ENV !== "production") {
     appType: "spa",
   });
   app.use(vite.middlewares);
-} else {
+} else if (!isVercel) {
   const distPath = path.join(__dirname, "../dist");
   app.use(express.static(distPath));
   app.get("*", (req, res) => {
