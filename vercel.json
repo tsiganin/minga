@@ -1,27 +1,16 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/index.ts",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
-    }
-  ],
   "rewrites": [
     {
-      "source": "/auth/(.*)",
+      "source": "/auth/:path*",
       "destination": "/api/index.ts"
     },
     {
-      "source": "/api/(.*)",
+      "source": "/api/:path*",
       "destination": "/api/index.ts"
     },
     {
-      "source": "/profiles/(.*)",
+      "source": "/profiles/:path*",
       "destination": "/api/index.ts"
     },
     {
