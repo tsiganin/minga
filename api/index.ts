@@ -254,7 +254,6 @@ async function ensureDbInitialized() {
 const JWT_SECRET = process.env.JWT_SECRET || "minga-secret-key-2026";
 
 const app = express();
-const PORT = 3000;
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
