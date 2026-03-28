@@ -1,11 +1,11 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
-import { Controller, ControllerProps, FieldValues, Path, useFormContext } from "react-hook-form"
+import { Controller, ControllerProps, FieldValues, FormProvider, Path, useFormContext } from "react-hook-form"
 
 import { cn } from "@/src/lib/utils"
 import { Label } from "@/src/components/ui/label"
 
-const Form = Slot
+const Form = FormProvider
 
 interface FormContextValue {
   name?: string
@@ -31,11 +31,11 @@ const useFormField = () => {
   const itemContext = React.useContext(FormItemContext)
   const { getFieldState, formState } = useFormContext()
 
-  const fieldState = getFieldState(fieldContext.name!, formState)
-
-  if (!fieldContext) {
+  if (!fieldContext || !fieldContext.name) {
     throw new Error("useFormField should be used within <FormField>")
   }
+
+  const fieldState = getFieldState(fieldContext.name, formState)
 
   const { id } = itemContext
 
