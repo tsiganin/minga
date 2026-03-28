@@ -251,7 +251,7 @@ async function ensureDbInitialized() {
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || "minga-secret-key-2026";
+const JWT_SECRET = process.env.JWT_SECRET || "changeme";
 
 const app = express();
 
