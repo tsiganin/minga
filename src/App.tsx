@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate, useLocation, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, Package, TrendingUp, Clock, LayoutGrid, Search, Users, Shield, Activity, Trash2, CheckCircle, XCircle, BarChart3, Mail, Edit, Upload, FileSpreadsheet, List, ArrowLeft, Eye, EyeOff, ArrowRight, Plus } from 'lucide-react';
+import { ChevronDown, Package, TrendingUp, Clock, LayoutGrid, Search, Users, Shield, Activity, Trash2, CheckCircle, XCircle, BarChart3, Mail, Edit, Upload, FileSpreadsheet, List, ArrowLeft, Eye, EyeOff, ArrowRight, Plus, Bell, LogOut, Settings, User as UserIcon } from 'lucide-react';
 import * as XLSX from 'xlsx';
+
+import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, increment, runTransaction, writeBatch } from 'firebase/firestore';
+import { auth, db } from './firebase';
 
 import { Navbar } from "@/src/components/layout/Navbar";
 import { HeroSection } from "@/src/components/layout/sections/HeroSection";
@@ -86,24 +90,25 @@ function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Giriş yapılamadı. Bilgilerinizi kontrol edin.');
-      }
-
-      localStorage.setItem('token', data.accessToken);
-      localStorage.setItem('userRole', data.role);
-      navigate('/');
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
       
+      // Check if user doc exists, if not create it (migration)
+      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+      if (!userDoc.exists()) {
+        // This shouldn't happen with new users, but for existing ones during migration
+        await setDoc(doc(db, 'users', firebaseUser.uid), {
+          email: firebaseUser.email,
+          role: 'buyer',
+          points: 0,
+          createdAt: serverTimestamp(),
+        });
+      }
+      
+      navigate('/');
     } catch (err: any) {
-      setError(err.message);
+      setError('Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.');
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -202,36 +207,59 @@ function RegisterPage() {
     setLoading(true);
 
     const f = e.currentTarget;
-    const body: any = {
-      email: (f.elements.namedItem('email') as HTMLInputElement).value,
-      password: (f.elements.namedItem('password') as HTMLInputElement).value,
-      phone: (f.elements.namedItem('phone') as HTMLInputElement).value,
-      role,
-      referredBy, // Include referral code
-    };
-
-    if (role === 'buyer') {
-      body.fullName = (f.elements.namedItem('fullName') as HTMLInputElement).value;
-    } else {
-      body.companyName = (f.elements.namedItem('companyName') as HTMLInputElement).value;
-      body.taxNumber = (f.elements.namedItem('taxNumber') as HTMLInputElement).value;
-    }
+    const email = (f.elements.namedItem('email') as HTMLInputElement).value;
+    const password = (f.elements.namedItem('password') as HTMLInputElement).value;
+    const phone = (f.elements.namedItem('phone') as HTMLInputElement).value;
 
     try {
-      const res = await fetch('/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'Kayıt sırasında bir hata oluştu.');
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+
+      const userData: any = {
+        uid: firebaseUser.uid,
+        email,
+        phone,
+        role,
+        points: 0,
+        createdAt: serverTimestamp(),
+      };
+
+      if (role === 'buyer') {
+        userData.fullName = (f.elements.namedItem('fullName') as HTMLInputElement).value;
+      } else {
+        userData.companyName = (f.elements.namedItem('companyName') as HTMLInputElement).value;
+        userData.taxNumber = (f.elements.namedItem('taxNumber') as HTMLInputElement).value;
       }
-      localStorage.setItem('token', data.accessToken);
-      localStorage.setItem('userRole', data.role);
+
+      // Handle Referral
+      if (referredBy) {
+        userData.referredBy = referredBy;
+        // Give points to the referrer
+        try {
+          const referrerDoc = await getDoc(doc(db, 'users', referredBy));
+          if (referrerDoc.exists()) {
+            await updateDoc(doc(db, 'users', referredBy), {
+              points: increment(100) // Give 100 points for referral
+            });
+            // Add notification for referrer
+            await addDoc(collection(db, 'notifications'), {
+              userId: referredBy,
+              title: 'Referans Puanı!',
+              message: 'Bir kullanıcı sizin referansınızla üye oldu. 100 puan kazandınız!',
+              isRead: false,
+              createdAt: serverTimestamp(),
+            });
+          }
+        } catch (err) {
+          console.error('Referral error:', err);
+        }
+      }
+
+      await setDoc(doc(db, 'users', firebaseUser.uid), userData);
       navigate('/');
     } catch (err: any) {
       setError(err.message);
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -387,8 +415,6 @@ function RegisterPage() {
 
 function ProfilePage() {
   const [profile, setProfile] = useState<any>({});
-  const [role, setRole] = useState<string>('buyer');
-  const [userEmail, setUserEmail] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -396,55 +422,40 @@ function ProfilePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchAll = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) { navigate('/login'); return; }
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        navigate('/login');
+        return;
+      }
 
       try {
-        const meRes = await fetch('/auth/me', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!meRes.ok) { navigate('/login'); return; }
-        const me = await meRes.json();
-
-        setRole(me.role || 'buyer');
-        setUserEmail(me.email || '');
-
-        const pRes = await fetch('/profiles/me', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (pRes.ok) {
-          const p = await pRes.json();
-          setProfile(p || {});
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          setProfile(userDoc.data());
         }
       } catch (err) {
         console.error(err);
       } finally {
         setLoading(false);
       }
-    };
-    fetchAll();
+    });
+
+    return () => unsubscribe();
   }, [navigate]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setMessage('');
-    const token = localStorage.getItem('token');
 
     try {
-      const res = await fetch('/profiles/me', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(profile),
-      });
-      if (res.ok) {
-        setMessage('✅ Profiliniz başarıyla güncellendi!');
-      } else {
-        setMessage('❌ Güncelleme başarısız.');
-      }
-    } catch {
-      setMessage('❌ Sunucu bağlantı hatası.');
+      const user = auth.currentUser;
+      if (!user) throw new Error('Oturum açılmamış.');
+
+      await updateDoc(doc(db, 'users', user.uid), profile);
+      setMessage('✅ Profiliniz başarıyla güncellendi!');
+    } catch (err: any) {
+      setMessage('❌ Güncelleme başarısız: ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -460,7 +471,7 @@ function ProfilePage() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Yükleniyor...</div>;
 
-  const isSupplier = role === 'supplier';
+  const isSupplier = profile.role === 'supplier';
   const inputCls = "w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all font-medium text-slate-800 text-sm";
   const labelCls = "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5";
 
@@ -488,7 +499,7 @@ function ProfilePage() {
                 <span className={`text-xs font-black px-2.5 py-1 rounded-full ${isSupplier ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>
                   {isSupplier ? '🏭 Satıcı' : '🛒 Alıcı'}
                 </span>
-                <p className="text-slate-400 text-sm font-medium truncate">{userEmail}</p>
+                <p className="text-slate-400 text-sm font-medium truncate">{profile.email}</p>
                 <h1 className="text-xl font-black text-slate-800 mt-0.5 truncate">
                   {isSupplier ? (profile.companyName || 'Şirket adı girilmemiş') : (profile.fullName || 'İsim girilmemiş')}
                 </h1>
@@ -535,7 +546,6 @@ function ProfilePage() {
 }
 
 function HomePage() {
-  const token = localStorage.getItem('token');
   const [groupBuys, setGroupBuys] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'new' | 'popular'>('new');
@@ -543,31 +553,31 @@ function HomePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch group buys
-        const res = await fetch('/api/group-buys');
-        const data = await res.json();
-        setGroupBuys(data);
+    // Listen for group buys
+    const q = query(collection(db, 'groupBuys'), orderBy('createdAt', 'desc'));
+    const unsubscribeGB = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setGroupBuys(data);
+      setLoading(false);
+    });
 
-        // Fetch user info if logged in
-        if (token) {
-          const meRes = await fetch('/auth/me', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (meRes.ok) {
-            const me = await meRes.json();
-            setUserRole(me.role);
-          }
+    // Listen for user role
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          setUserRole(userDoc.data().role);
         }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+      } else {
+        setUserRole(null);
       }
+    });
+
+    return () => {
+      unsubscribeGB();
+      unsubscribeAuth();
     };
-    fetchData();
-  }, [token]);
+  }, []);
 
   const sortedGroupBuys = [...groupBuys].sort((a, b) => {
     if (activeTab === 'new') {
@@ -579,6 +589,8 @@ function HomePage() {
       return progressB - progressA;
     }
   });
+
+  const currentUser = auth.currentUser;
 
   const renderGroupBuyCard = (gb: any) => {
     const progress = (gb.currentQuantity / gb.targetQuantity) * 100;
@@ -678,10 +690,10 @@ function HomePage() {
 
   return (
     <div className="min-h-screen bg-background text-slate-900 font-sans">
-      {!token && <HeroSection />}
+      {!currentUser && <HeroSection />}
       
-      <div id="listings" className={`max-w-7xl mx-auto px-6 lg:px-10 py-12 ${token ? 'pt-28' : ''}`}>
-        {token && (
+      <div id="listings" className={`max-w-7xl mx-auto px-6 lg:px-10 py-12 ${currentUser ? 'pt-28' : ''}`}>
+        {currentUser && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20">
             <motion.div 
               whileHover={{ y: -8 }}
@@ -724,7 +736,7 @@ function HomePage() {
         )}
 
         <div className="mb-12">
-          {!token && (
+          {!currentUser && (
             <div className="text-center mb-16">
               <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">Aktif Fırsatlar</h2>
               <p className="text-xl text-slate-500 max-w-2xl mx-auto">Şu anda devam eden en popüler ve yeni grup alımlarını keşfedin.</p>
@@ -764,7 +776,7 @@ function HomePage() {
         </div>
       </div>
 
-      {!token && (
+      {!currentUser && (
         <>
           <BenefitsSection />
           <FeaturesSection />
@@ -785,36 +797,42 @@ function GroupBuyPage() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
-  const token = localStorage.getItem('token');
+  const currentUser = auth.currentUser;
 
   useEffect(() => {
-    fetch('/api/group-buys')
-      .then(res => res.json())
-      .then(data => {
-        const searchParams = new URLSearchParams(location.search);
-        const filter = searchParams.get('filter');
-        const search = searchParams.get('search')?.toLowerCase();
-        
-        let filteredData = [...data];
+    const q = query(collection(db, 'groupBuys'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      const searchParams = new URLSearchParams(location.search);
+      const filter = searchParams.get('filter');
+      const search = searchParams.get('search')?.toLowerCase();
+      
+      let filteredData = [...data];
 
-        if (search) {
-          filteredData = filteredData.filter(gb => 
-            gb.productName.toLowerCase().includes(search) || 
-            gb.description.toLowerCase().includes(search) ||
-            gb.category?.toLowerCase().includes(search)
-          );
-        }
+      if (search) {
+        filteredData = filteredData.filter((gb: any) => 
+          gb.productName.toLowerCase().includes(search) || 
+          gb.description.toLowerCase().includes(search) ||
+          gb.category?.toLowerCase().includes(search)
+        );
+      }
 
-        if (filter === 'popular') {
-          filteredData.sort((a, b) => (b.currentQuantity / b.targetQuantity) - (a.currentQuantity / a.targetQuantity));
-        } else if (filter === 'new') {
-          filteredData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        }
-        
-        setGroupBuys(filteredData);
-        setLoading(false);
-      })
-      .catch(err => console.error(err));
+      if (filter === 'popular') {
+        filteredData.sort((a: any, b: any) => (b.currentQuantity / b.targetQuantity) - (a.currentQuantity / a.targetQuantity));
+      } else if (filter === 'new') {
+        filteredData.sort((a: any, b: any) => {
+          const dateB = b.createdAt?.toDate?.() ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime();
+          const dateA = a.createdAt?.toDate?.() ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime();
+          return dateB - dateA;
+        });
+      }
+      
+      setGroupBuys(filteredData);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [location.search]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Yükleniyor...</div>;
@@ -939,13 +957,15 @@ function CreateGroupBuyPage() {
   const [targetQuantity, setTargetQuantity] = useState<number>(0);
   const [totalTargetPrice, setTotalTargetPrice] = useState<number>(0);
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!token) navigate('/login');
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) navigate('/login');
+    });
     fetchCategories();
-  }, [token, navigate]);
+    return () => unsubscribe();
+  }, [navigate]);
 
   useEffect(() => {
     setTotalTargetPrice(unitPrice * targetQuantity);
@@ -953,8 +973,9 @@ function CreateGroupBuyPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch('/api/categories');
-      const data = await res.json();
+      const q = query(collection(db, 'categories'), orderBy('name', 'asc'));
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setCategories(data);
     } catch (err) {
       console.error(err);
@@ -983,34 +1004,55 @@ function CreateGroupBuyPage() {
     setLoading(true);
     setError('');
 
+    const user = auth.currentUser;
+    if (!user) { setError('Oturum açılmamış.'); setLoading(false); return; }
+
     const f = e.currentTarget;
     const dateVal = (f.elements.namedItem('deadlineDate') as HTMLInputElement).value;
     const timeVal = (f.elements.namedItem('deadlineTime') as HTMLInputElement).value;
+    const categoryName = (f.elements.namedItem('category') as HTMLSelectElement).value;
 
-    const body = {
+    const groupBuyData = {
       productName: (f.elements.namedItem('productName') as HTMLInputElement).value,
       description: (f.elements.namedItem('description') as HTMLTextAreaElement).value,
-      category: (f.elements.namedItem('category') as HTMLSelectElement).value,
+      category: categoryName,
       targetQuantity: parseFloat((f.elements.namedItem('targetQuantity') as HTMLInputElement).value),
       unitPrice: parseFloat((f.elements.namedItem('unitPrice') as HTMLInputElement).value),
       unit: (f.elements.namedItem('unit') as HTMLInputElement).value,
       deadline: new Date(`${dateVal}T${timeVal}`).toISOString(),
-      imagesBase64: images,
+      imagesBase64: JSON.stringify(images),
+      creatorId: user.uid,
+      currentQuantity: 0,
+      status: 'active',
+      createdAt: serverTimestamp(),
+      targetPrice: totalTargetPrice,
     };
 
     try {
-      const res = await fetch('/api/group-buys', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(body),
+      const docRef = await addDoc(collection(db, 'groupBuys'), groupBuyData);
+
+      // Give points to creator
+      await updateDoc(doc(db, 'users', user.uid), {
+        points: increment(50) // 50 points for creating a group buy
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || 'Grup alımı oluşturulamadı.');
-      }
+
+      // Notify suppliers in the same category
+      const suppliersQuery = query(collection(db, 'users'), where('role', '==', 'supplier'), where('sector', '==', categoryName));
+      const suppliersSnapshot = await getDocs(suppliersQuery);
+      
+      const notificationPromises = suppliersSnapshot.docs.map(supplierDoc => {
+        return addDoc(collection(db, 'notifications'), {
+          userId: supplierDoc.id,
+          title: 'Yeni İlan!',
+          message: `${categoryName} kategorisinde yeni bir ilan açıldı: ${groupBuyData.productName}`,
+          link: `/group-buys/${docRef.id}`,
+          isRead: false,
+          createdAt: serverTimestamp(),
+        });
+      });
+
+      await Promise.all(notificationPromises);
+
       navigate('/group-buys');
     } catch (err: any) {
       setError(err.message);
@@ -1105,6 +1147,7 @@ function CreateGroupBuyPage() {
                   type="number" 
                   step="0.01" 
                   required 
+                  onFocus={(e) => e.target.select()}
                   onChange={(e) => setTargetQuantity(parseFloat(e.target.value) || 0)}
                   placeholder="1000" 
                   className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
@@ -1117,6 +1160,7 @@ function CreateGroupBuyPage() {
                   type="number" 
                   step="0.01" 
                   required 
+                  onFocus={(e) => e.target.select()}
                   onChange={(e) => setUnitPrice(parseFloat(e.target.value) || 0)}
                   placeholder="150.00" 
                   className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
@@ -1166,106 +1210,112 @@ function GroupBuyDetailPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [editingGroupBuy, setEditingGroupBuy] = useState<any>(null);
   const [editingImages, setEditingImages] = useState<string[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
-
-  const fetchHistory = async (orderId: string) => {
-    try {
-      const res = await fetch(`/api/orders/${orderId}/history`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setHistory(data);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const fetchDetail = async () => {
-    try {
-      const res = await fetch('/api/group-buys');
-      const data = await res.json();
-      const found = data.find((item: any) => item.id === id);
-      
-      if (found && found.imagesBase64) {
-        try {
-          found.images = JSON.parse(found.imagesBase64);
-        } catch (e) {
-          found.images = [];
-        }
-      } else if (found) {
-        found.images = [];
-      }
-      
-      setGb(found);
-
-      if (token) {
-        const meRes = await fetch('/auth/me', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const me = await meRes.json();
-        setCurrentUser(me);
-
-        if (found) {
-          const ordersRes = await fetch('/api/my-orders', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (ordersRes.ok) {
-            const orders = await ordersRes.json();
-            const existing = orders.find((o: any) => o.groupBuyId === id);
-            setExistingOrder(existing);
-            if (existing) {
-              setQuantity(existing.quantity);
-              fetchHistory(existing.id);
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    fetchDetail();
-  }, [id, token]);
+    const fetchCategories = async () => {
+      const catsSnap = await getDocs(query(collection(db, 'categories'), orderBy('name', 'asc')));
+      setCategories(catsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    };
+    fetchCategories();
+
+    if (!id) return;
+
+    // Listen for group buy detail
+    const unsubscribeGB = onSnapshot(doc(db, 'groupBuys', id), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = { id: docSnap.id, ...docSnap.data() } as any;
+        if (data.imagesBase64) {
+          try {
+            data.images = JSON.parse(data.imagesBase64);
+          } catch (e) {
+            data.images = [];
+          }
+        }
+        setGb(data);
+      } else {
+        setGb(null);
+      }
+      setLoading(false);
+    });
+
+    // Listen for user and their order
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          setCurrentUser({ uid: user.uid, ...userDoc.data() });
+        }
+
+        // Listen for existing order
+        const q = query(collection(db, 'orders'), where('userId', '==', user.uid), where('groupBuyId', '==', id));
+        const unsubscribeOrder = onSnapshot(q, (snapshot) => {
+          if (!snapshot.empty) {
+            const orderDoc = snapshot.docs[0];
+            const orderData = { id: orderDoc.id, ...orderDoc.data() } as any;
+            setExistingOrder(orderData);
+            setQuantity(orderData.quantity);
+          } else {
+            setExistingOrder(null);
+          }
+        });
+        return () => unsubscribeOrder();
+      } else {
+        setCurrentUser(null);
+        setExistingOrder(null);
+      }
+    });
+
+    return () => {
+      unsubscribeGB();
+      unsubscribeAuth();
+    };
+  }, [id]);
 
   const handleJoin = async () => {
-    if (!token) { navigate('/login'); return; }
+    const user = auth.currentUser;
+    if (!user) { navigate('/login'); return; }
     setJoining(true);
     setMessage('');
 
     try {
-      const res = await fetch(`/api/group-buys/${id}/join`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ quantity }),
+      await runTransaction(db, async (transaction) => {
+        const gbRef = doc(db, 'groupBuys', id!);
+        const gbDoc = await transaction.get(gbRef);
+        if (!gbDoc.exists()) throw new Error('İlan bulunamadı.');
+
+        const gbData = gbDoc.data();
+        const oldQty = existingOrder ? existingOrder.quantity : 0;
+        const newTotalQty = gbData.currentQuantity - oldQty + quantity;
+
+        // Update GroupBuy
+        transaction.update(gbRef, { currentQuantity: newTotalQty });
+
+        // Update or Create Order
+        if (existingOrder) {
+          const orderRef = doc(db, 'orders', existingOrder.id);
+          transaction.update(orderRef, { 
+            quantity, 
+            updatedAt: serverTimestamp() 
+          });
+        } else {
+          const orderRef = doc(collection(db, 'orders'));
+          transaction.set(orderRef, {
+            userId: user.uid,
+            groupBuyId: id,
+            quantity,
+            status: 'pending',
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+        }
       });
-      if (res.ok) {
-        const updatedOrder = await res.json();
-        setMessage(existingOrder ? '✅ Siparişiniz başarıyla güncellendi.' : '✅ Başarıyla katıldınız! Siparişiniz oluşturuldu.');
-        
-        // İlanın toplam miktarını frontend'de de güncelle
-        const oldOrderQty = existingOrder ? existingOrder.quantity : 0;
-        const updatedGb = { ...gb, currentQuantity: gb.currentQuantity - oldOrderQty + quantity };
-        
-        setExistingOrder(updatedOrder);
-        setGb(updatedGb);
-        fetchHistory(updatedOrder.id);
-      } else {
-        const data = await res.json();
-        setMessage(`❌ Hata: ${data.message}`);
-      }
-    } catch {
-      setMessage('❌ Sunucu hatası.');
+
+      setMessage(existingOrder ? '✅ Siparişiniz başarıyla güncellendi.' : '✅ Başarıyla katıldınız! Siparişiniz oluşturuldu.');
+    } catch (err: any) {
+      setMessage(`❌ Hata: ${err.message}`);
     } finally {
       setJoining(false);
     }
@@ -1275,7 +1325,7 @@ function GroupBuyDetailPage() {
   if (!gb) return <div className="min-h-screen flex items-center justify-center">Bulunamadı.</div>;
 
   const progress = (gb.currentQuantity / gb.targetQuantity) * 100;
-  const isOwner = currentUser && gb.supplierId === currentUser.id;
+  const isOwner = currentUser && gb.creatorId === currentUser.uid;
   const isAdmin = currentUser && currentUser.role === 'admin';
 
   return (
@@ -1373,7 +1423,7 @@ function GroupBuyDetailPage() {
                 <p className="text-sm text-slate-300 font-medium mb-4 leading-relaxed">Bu ilanı arkadaşlarınızla paylaşın, sizin linkinizle üye olan her kişi için 100 puan kazanın!</p>
                 <button 
                   onClick={() => {
-                    const url = `${window.location.origin}/register?ref=${currentUser?.id}`;
+                    const url = `${window.location.origin}/register?ref=${currentUser?.uid}`;
                     navigator.clipboard.writeText(url);
                     alert('Referans linkiniz kopyalandı!');
                   }}
@@ -1395,6 +1445,7 @@ function GroupBuyDetailPage() {
                     <input 
                       type="number" 
                       value={quantity} 
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => setQuantity(Math.max(1, parseFloat(e.target.value) || 0))}
                       className="flex-1 bg-white/10 border-none rounded-xl py-3 px-4 text-center text-xl font-black outline-none focus:ring-2 focus:ring-blue-500" 
                     />
@@ -1464,90 +1515,103 @@ function GroupBuyDetailPage() {
                 </button>
               </div>
 
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const payload = {
-                  ...Object.fromEntries(formData.entries()),
-                  unitPrice: parseFloat(formData.get('unitPrice') as string),
-                  targetQuantity: parseFloat(formData.get('targetQuantity') as string),
-                  imagesBase64: editingImages,
-                };
-                await fetch(`/api/group-buys/${editingGroupBuy.id}`, {
-                  method: 'PATCH',
-                  headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
-                  },
-                  body: JSON.stringify(payload)
-                });
-                setEditingGroupBuy(null);
-                fetchDetail();
-              }} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Ürün Fotoğrafları</label>
-                  <div className="grid grid-cols-5 gap-3 mb-4">
-                    {editingImages.map((img, idx) => (
-                      <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-slate-100 group">
-                        <img src={img} alt={`preview-${idx}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                        <button 
-                          type="button"
-                          onClick={() => setEditingImages(prev => prev.filter((_, i) => i !== idx))}
-                          className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        const input = document.createElement('input');
-                        input.type = 'file';
-                        input.multiple = true;
-                        input.accept = 'image/*';
-                        input.onchange = (e: any) => {
-                          const files = e.target.files;
-                          if (!files) return;
-                          Array.from(files).forEach((file: any) => {
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                              setEditingImages(prev => [...prev, reader.result as string]);
-                            };
-                            reader.readAsDataURL(file);
-                          });
-                        };
-                        input.click();
-                      }}
-                      className="aspect-square rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-blue-500 hover:text-blue-500 transition"
-                    >
-                      <Upload className="w-5 h-5 mb-1" />
-                      <span className="text-[8px] font-black uppercase">Yükle</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Ürün Adı</label>
-                  <input name="productName" defaultValue={editingGroupBuy.productName} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  const unitPrice = parseFloat(formData.get('unitPrice') as string) || 0;
+                  const targetQuantity = parseFloat(formData.get('targetQuantity') as string) || 0;
+                  const payload = {
+                    productName: formData.get('productName'),
+                    unitPrice,
+                    targetQuantity,
+                    unit: formData.get('unit'),
+                    category: formData.get('category'),
+                    status: formData.get('status'),
+                    targetPrice: unitPrice * targetQuantity,
+                    imagesBase64: JSON.stringify(editingImages),
+                  };
+                  try {
+                    await updateDoc(doc(db, 'groupBuys', editingGroupBuy.id), payload);
+                    setEditingGroupBuy(null);
+                  } catch (err) {
+                    console.error("Update Error:", err);
+                    alert("Güncelleme sırasında bir hata oluştu.");
+                  }
+                }} className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Birim Fiyat (TL)</label>
-                    <input name="unitPrice" type="number" step="0.01" defaultValue={editingGroupBuy.unitPrice} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Ürün Fotoğrafları</label>
+                    <div className="grid grid-cols-5 gap-3 mb-4">
+                      {editingImages.map((img, idx) => (
+                        <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-slate-100 group">
+                          <img src={img} alt={`preview-${idx}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          <button 
+                            type="button"
+                            onClick={() => setEditingImages(prev => prev.filter((_, i) => i !== idx))}
+                            className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.multiple = true;
+                          input.accept = 'image/*';
+                          input.onchange = (e: any) => {
+                            const files = e.target.files;
+                            if (!files) return;
+                            Array.from(files).forEach((file: any) => {
+                              const reader = new FileReader();
+                              reader.onload = () => {
+                                setEditingImages(prev => [...prev, reader.result as string]);
+                              };
+                              reader.readAsDataURL(file);
+                            });
+                          };
+                          input.click();
+                        }}
+                        className="aspect-square rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-blue-500 hover:text-blue-500 transition"
+                      >
+                        <Upload className="w-5 h-5 mb-1" />
+                        <span className="text-[8px] font-black uppercase">Yükle</span>
+                      </button>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Hedef Miktar</label>
-                    <input name="targetQuantity" type="number" defaultValue={editingGroupBuy.targetQuantity} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Kategori</label>
-                    <input name="category" defaultValue={editingGroupBuy.category} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Ürün Adı</label>
+                    <input name="productName" defaultValue={editingGroupBuy.productName} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
                   </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Birim Fiyat (TL)</label>
+                      <input name="unitPrice" type="number" step="0.01" onFocus={(e) => e.target.select()} defaultValue={editingGroupBuy.unitPrice} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Hedef Miktar</label>
+                      <input name="targetQuantity" type="number" step="0.01" onFocus={(e) => e.target.select()} defaultValue={editingGroupBuy.targetQuantity} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Birim</label>
+                      <select name="unit" defaultValue={editingGroupBuy.unit} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500">
+                        {UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Kategori</label>
+                      <select name="category" defaultValue={editingGroupBuy.category} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500">
+                        {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Durum</label>
                     <select name="status" defaultValue={editingGroupBuy.status} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500">
@@ -1556,12 +1620,11 @@ function GroupBuyDetailPage() {
                       <option value="cancelled">İptal Edildi</option>
                     </select>
                   </div>
-                </div>
 
-                <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-indigo-700 transition shadow-xl shadow-indigo-200">
-                  İlanı Güncelle
-                </button>
-              </form>
+                  <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-indigo-700 transition shadow-xl shadow-indigo-200">
+                    İlanı Güncelle
+                  </button>
+                </form>
             </div>
           </motion.div>
         </div>
@@ -1577,29 +1640,36 @@ function MyListingsPage() {
   const [loading, setLoading] = useState(true);
   const [editingGroupBuy, setEditingGroupBuy] = useState<any>(null);
   const [editingImages, setEditingImages] = useState<string[]>([]);
-  const token = localStorage.getItem('token');
+  const [categories, setCategories] = useState<any[]>([]);
   const navigate = useNavigate();
 
   const fetchMyData = async () => {
-    if (!token) { navigate('/login'); return; }
+    const user = auth.currentUser;
+    if (!user) { navigate('/login'); return; }
     setLoading(true);
     try {
-      const meRes = await fetch('/auth/me', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const me = await meRes.json();
-      setRole(me.role);
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const userRole = userDoc.exists() ? userDoc.data().role : 'buyer';
+      setRole(userRole);
 
-      if (me.role === 'supplier') {
-        const res = await fetch('/api/group-buys');
-        const data = await res.json();
-        setItems(data.filter((gb: any) => gb.supplierId === me.id));
+      // Fetch categories for the edit modal
+      const catsSnap = await getDocs(query(collection(db, 'categories'), orderBy('name', 'asc')));
+      setCategories(catsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+      if (userRole === 'supplier') {
+        const q = query(collection(db, 'groupBuys'), where('creatorId', '==', user.uid));
+        const snapshot = await getDocs(q);
+        setItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } else {
-        const res = await fetch('/api/my-orders', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        setItems(data);
+        const q = query(collection(db, 'orders'), where('userId', '==', user.uid));
+        const snapshot = await getDocs(q);
+        const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        const ordersWithGB = await Promise.all(orders.map(async (order: any) => {
+          const gbDoc = await getDoc(doc(db, 'groupBuys', order.groupBuyId));
+          return { ...order, groupBuy: gbDoc.exists() ? { id: gbDoc.id, ...gbDoc.data() } : null };
+        }));
+        setItems(ordersWithGB);
       }
     } catch (err) {
       console.error(err);
@@ -1609,8 +1679,15 @@ function MyListingsPage() {
   };
 
   useEffect(() => {
-    fetchMyData();
-  }, [token, navigate]);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        fetchMyData();
+      } else {
+        navigate('/login');
+      }
+    });
+    return () => unsubscribe();
+  }, [navigate]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Yükleniyor...</div>;
 
@@ -1734,22 +1811,26 @@ function MyListingsPage() {
                 <form onSubmit={async (e) => {
                   e.preventDefault();
                   const formData = new FormData(e.currentTarget);
+                  const unitPrice = parseFloat(formData.get('unitPrice') as string) || 0;
+                  const targetQuantity = parseFloat(formData.get('targetQuantity') as string) || 0;
                   const payload = {
-                    ...Object.fromEntries(formData.entries()),
-                    unitPrice: parseFloat(formData.get('unitPrice') as string),
-                    targetQuantity: parseFloat(formData.get('targetQuantity') as string),
-                    imagesBase64: editingImages,
+                    productName: formData.get('productName'),
+                    unitPrice,
+                    targetQuantity,
+                    unit: formData.get('unit'),
+                    category: formData.get('category'),
+                    status: formData.get('status'),
+                    targetPrice: unitPrice * targetQuantity,
+                    imagesBase64: JSON.stringify(editingImages),
                   };
-                  await fetch(`/api/group-buys/${editingGroupBuy.id}`, {
-                    method: 'PATCH',
-                    headers: { 
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${token}` 
-                    },
-                    body: JSON.stringify(payload)
-                  });
-                  setEditingGroupBuy(null);
-                  fetchMyData();
+                  try {
+                    await updateDoc(doc(db, 'groupBuys', editingGroupBuy.id), payload);
+                    setEditingGroupBuy(null);
+                    fetchMyData();
+                  } catch (err) {
+                    console.error("Update Error:", err);
+                    alert("Güncelleme sırasında bir hata oluştu.");
+                  }
                 }} className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Ürün Fotoğrafları</label>
@@ -1802,27 +1883,36 @@ function MyListingsPage() {
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Birim Fiyat (TL)</label>
-                      <input name="unitPrice" type="number" step="0.01" defaultValue={editingGroupBuy.unitPrice} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
+                      <input name="unitPrice" type="number" step="0.01" onFocus={(e) => e.target.select()} defaultValue={editingGroupBuy.unitPrice} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Hedef Miktar</label>
-                      <input name="targetQuantity" type="number" defaultValue={editingGroupBuy.targetQuantity} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
+                      <input name="targetQuantity" type="number" step="0.01" onFocus={(e) => e.target.select()} defaultValue={editingGroupBuy.targetQuantity} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Kategori</label>
-                      <input name="category" defaultValue={editingGroupBuy.category} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Durum</label>
-                      <select name="status" defaultValue={editingGroupBuy.status} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500">
-                        <option value="active">Aktif</option>
-                        <option value="completed">Tamamlandı</option>
-                        <option value="cancelled">İptal Edildi</option>
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Birim</label>
+                      <select name="unit" defaultValue={editingGroupBuy.unit} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500">
+                        {UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
                       </select>
                     </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Kategori</label>
+                      <select name="category" defaultValue={editingGroupBuy.category} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500">
+                        {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Durum</label>
+                    <select name="status" defaultValue={editingGroupBuy.status} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500">
+                      <option value="active">Aktif</option>
+                      <option value="completed">Tamamlandı</option>
+                      <option value="cancelled">İptal Edildi</option>
+                    </select>
                   </div>
 
                   <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-indigo-700 transition shadow-xl shadow-indigo-200">
@@ -1850,49 +1940,57 @@ function AdminDashboard() {
   const [editingImages, setEditingImages] = useState<string[]>([]);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [messagingUser, setMessagingUser] = useState<any>(null);
-  const token = localStorage.getItem('token');
-  const userRole = localStorage.getItem('userRole');
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    if (userRole !== 'admin') return;
-    fetchData();
-  }, [activeTab]);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setCurrentUser({ uid: user.uid, ...userData });
+          if (userData.role !== 'admin') {
+            navigate('/');
+          } else {
+            fetchData();
+          }
+        } else {
+          navigate('/');
+        }
+      } else {
+        navigate('/login');
+      }
+    });
+    return () => unsubscribe();
+  }, [activeTab, navigate]);
 
   const fetchData = async () => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    
     setLoading(true);
     try {
-      const headers = { Authorization: `Bearer ${token}` };
-      const endpoint = activeTab === 'overview' ? '/api/admin/stats' : 
-                       activeTab === 'users' ? '/api/admin/users' : 
-                       activeTab === 'categories' ? '/api/admin/categories' :
-                       '/api/admin/group-buys';
-      
-      const res = await fetch(endpoint, { headers });
-      
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${res.status}`);
-      }
-      
-      const data = await res.json();
-      
       if (activeTab === 'overview') {
-        setStats(data);
+        const usersSnap = await getDocs(collection(db, 'users'));
+        const gbsSnap = await getDocs(collection(db, 'groupBuys'));
+        const ordersSnap = await getDocs(collection(db, 'orders'));
+        
+        setStats({
+          totalUsers: usersSnap.size,
+          totalGroupBuys: gbsSnap.size,
+          activeGroupBuys: gbsSnap.docs.filter(d => d.data().status === 'active').length,
+          totalOrders: ordersSnap.size,
+        });
       } else if (activeTab === 'users') {
-        setUsers(Array.isArray(data) ? data : []);
+        const snapshot = await getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc')));
+        setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } else if (activeTab === 'group-buys') {
-        setGroupBuys(Array.isArray(data) ? data : []);
+        const snapshot = await getDocs(query(collection(db, 'groupBuys'), orderBy('createdAt', 'desc')));
+        setGroupBuys(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } else if (activeTab === 'categories') {
-        setCategories(Array.isArray(data) ? data : []);
+        const snapshot = await getDocs(query(collection(db, 'categories'), orderBy('name', 'asc')));
+        setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       }
     } catch (err) {
       console.error("Admin Dashboard Fetch Error:", err);
-      // Hata durumunda listeleri boşaltma, mevcut veriyi koru veya kullanıcıya bildir
     } finally {
       setLoading(false);
     }
@@ -1900,32 +1998,31 @@ function AdminDashboard() {
 
   const deleteUser = async (id: string) => {
     if (!confirm('Bu kullanıcıyı silmek istediğinize emin misiniz?')) return;
-    await fetch(`/api/admin/users/${id}`, { 
-      method: 'DELETE', 
-      headers: { Authorization: `Bearer ${token}` } 
-    });
-    fetchData();
+    try {
+      await deleteDoc(doc(db, 'users', id));
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const deleteGroupBuy = async (id: string) => {
     if (!confirm('Bu ilanı silmek istediğinize emin misiniz?')) return;
-    await fetch(`/api/admin/group-buys/${id}`, { 
-      method: 'DELETE', 
-      headers: { Authorization: `Bearer ${token}` } 
-    });
-    fetchData();
+    try {
+      await deleteDoc(doc(db, 'groupBuys', id));
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const updateStatus = async (id: string, status: string) => {
-    await fetch(`/api/admin/group-buys/${id}/status`, {
-      method: 'PATCH',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}` 
-      },
-      body: JSON.stringify({ status })
-    });
-    fetchData();
+    try {
+      await updateDoc(doc(db, 'groupBuys', id), { status });
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleCategoryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1939,44 +2036,41 @@ function AdminDashboard() {
         const wb = XLSX.read(bstr, { type: 'binary' });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws);
+        const data: any[] = XLSX.utils.sheet_to_json(ws);
         
-        const res = await fetch('/api/admin/categories/bulk', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ categories: data })
+        const batch = writeBatch(db);
+        data.forEach((cat: any) => {
+          const ref = doc(collection(db, 'categories'));
+          batch.set(ref, {
+            name: cat.name || cat.Kategori || cat.kategori,
+            icon: cat.icon || 'Package',
+            createdAt: serverTimestamp()
+          });
         });
+        await batch.commit();
         
-        if (res.ok) {
-          alert('Kategoriler başarıyla yüklendi.');
-          fetchData();
-        } else {
-          const err = await res.json();
-          alert('Hata: ' + err.message);
-        }
+        alert('Kategoriler başarıyla yüklendi.');
+        fetchData();
       } catch (err) {
         console.error(err);
         alert('Yükleme sırasında bir hata oluştu. Lütfen Excel formatını kontrol edin.');
       }
     };
     reader.readAsBinaryString(file);
-    // Reset input
     e.target.value = '';
   };
 
   const deleteCategory = async (id: string) => {
     if (!confirm('Bu kategoriyi silmek istediğinize emin misiniz?')) return;
-    await fetch(`/api/admin/categories/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    fetchData();
+    try {
+      await deleteDoc(doc(db, 'categories', id));
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  if (userRole !== 'admin') return <Navigate to="/" />;
+  if (!currentUser || currentUser.role !== 'admin') return null;
 
   return (
     <div className="min-h-screen bg-slate-50 flex pt-20">
@@ -2114,11 +2208,11 @@ function AdminDashboard() {
                               </button>
                               <button 
                                 onClick={async () => {
-                                  const res = await fetch(`/api/admin/users/${user.id}/profile`, {
-                                    headers: { Authorization: `Bearer ${token}` }
-                                  });
-                                  const data = await res.json();
-                                  setEditingUser(data);
+                                  const userDoc = await getDoc(doc(db, 'users', user.id));
+                                  if (userDoc.exists()) {
+                                    const userData = userDoc.data();
+                                    setEditingUser({ user: { id: user.id, ...userData }, profile: userData });
+                                  }
                                 }}
                                 className="p-2 text-slate-400 hover:text-indigo-600 transition"
                                 title="Profili Düzenle"
@@ -2320,23 +2414,19 @@ function AdminDashboard() {
                   const payload = {
                     role: formData.get('role'),
                     isActive: formData.get('isActive') === 'true',
-                    profileData: {
-                      fullName: formData.get('fullName'),
-                      companyName: formData.get('companyName'),
-                      phone: formData.get('phone'),
-                      address: formData.get('address'),
-                    }
+                    fullName: formData.get('fullName'),
+                    companyName: formData.get('companyName'),
+                    phone: formData.get('phone'),
+                    address: formData.get('address'),
                   };
-                  await fetch(`/api/admin/users/${editingUser.user.id}/profile`, {
-                    method: 'PATCH',
-                    headers: { 
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${token}` 
-                    },
-                    body: JSON.stringify(payload)
-                  });
-                  setEditingUser(null);
-                  fetchData();
+                  try {
+                    await updateDoc(doc(db, 'users', editingUser.user.id), payload);
+                    setEditingUser(null);
+                    fetchData();
+                  } catch (err) {
+                    console.error("User Update Error:", err);
+                    alert("Kullanıcı güncellenirken bir hata oluştu.");
+                  }
                 }} className="space-y-6">
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
@@ -2358,17 +2448,17 @@ function AdminDashboard() {
 
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Ad Soyad / Firma Yetkilisi</label>
-                    <input name="fullName" defaultValue={editingUser.profile?.fullName || editingUser.profile?.companyName} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
+                    <input name="fullName" onFocus={(e) => e.target.select()} defaultValue={editingUser.profile?.fullName || editingUser.profile?.companyName} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
                   </div>
 
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Telefon</label>
-                      <input name="phone" defaultValue={editingUser.profile?.phone} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
+                      <input name="phone" onFocus={(e) => e.target.select()} defaultValue={editingUser.profile?.phone} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Firma Adı</label>
-                      <input name="companyName" defaultValue={editingUser.profile?.companyName} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
+                      <input name="companyName" onFocus={(e) => e.target.select()} defaultValue={editingUser.profile?.companyName} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
                     </div>
                   </div>
 
@@ -2407,22 +2497,26 @@ function AdminDashboard() {
                 <form onSubmit={async (e) => {
                   e.preventDefault();
                   const formData = new FormData(e.currentTarget);
+                  const unitPrice = parseFloat(formData.get('unitPrice') as string) || 0;
+                  const targetQuantity = parseFloat(formData.get('targetQuantity') as string) || 0;
                   const payload = {
-                    ...Object.fromEntries(formData.entries()),
-                    unitPrice: parseFloat(formData.get('unitPrice') as string),
-                    targetQuantity: parseFloat(formData.get('targetQuantity') as string),
-                    imagesBase64: editingImages,
+                    productName: formData.get('productName'),
+                    unitPrice,
+                    targetQuantity,
+                    unit: formData.get('unit'),
+                    category: formData.get('category'),
+                    status: formData.get('status'),
+                    targetPrice: unitPrice * targetQuantity,
+                    imagesBase64: JSON.stringify(editingImages),
                   };
-                  await fetch(`/api/admin/group-buys/${editingGroupBuy.id}`, {
-                    method: 'PATCH',
-                    headers: { 
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${token}` 
-                    },
-                    body: JSON.stringify(payload)
-                  });
-                  setEditingGroupBuy(null);
-                  fetchData();
+                  try {
+                    await updateDoc(doc(db, 'groupBuys', editingGroupBuy.id), payload);
+                    setEditingGroupBuy(null);
+                    fetchData();
+                  } catch (err) {
+                    console.error("Update Error:", err);
+                    alert("Güncelleme sırasında bir hata oluştu.");
+                  }
                 }} className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Ürün Fotoğrafları</label>
@@ -2475,27 +2569,36 @@ function AdminDashboard() {
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Birim Fiyat (TL)</label>
-                      <input name="unitPrice" type="number" step="0.01" defaultValue={editingGroupBuy.unitPrice} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
+                      <input name="unitPrice" type="number" step="0.01" onFocus={(e) => e.target.select()} defaultValue={editingGroupBuy.unitPrice} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Hedef Miktar</label>
-                      <input name="targetQuantity" type="number" defaultValue={editingGroupBuy.targetQuantity} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
+                      <input name="targetQuantity" type="number" step="0.01" onFocus={(e) => e.target.select()} defaultValue={editingGroupBuy.targetQuantity} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Kategori</label>
-                      <input name="category" defaultValue={editingGroupBuy.category} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Durum</label>
-                      <select name="status" defaultValue={editingGroupBuy.status} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500">
-                        <option value="active">Aktif</option>
-                        <option value="completed">Tamamlandı</option>
-                        <option value="cancelled">İptal Edildi</option>
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Birim</label>
+                      <select name="unit" defaultValue={editingGroupBuy.unit} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500">
+                        {UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
                       </select>
                     </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Kategori</label>
+                      <select name="category" defaultValue={editingGroupBuy.category} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500">
+                        {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Durum</label>
+                    <select name="status" defaultValue={editingGroupBuy.status} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500">
+                      <option value="active">Aktif</option>
+                      <option value="completed">Tamamlandı</option>
+                      <option value="cancelled">İptal Edildi</option>
+                    </select>
                   </div>
 
                   <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-indigo-700 transition shadow-xl shadow-indigo-200">
@@ -2528,17 +2631,20 @@ function AdminDashboard() {
                 <form onSubmit={async (e) => {
                   e.preventDefault();
                   const formData = new FormData(e.currentTarget);
-                  const payload = Object.fromEntries(formData.entries());
-                  await fetch(`/api/admin/users/${messagingUser.id}/message`, {
-                    method: 'POST',
-                    headers: { 
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${token}` 
-                    },
-                    body: JSON.stringify(payload)
-                  });
-                  alert('Mesaj gönderildi!');
-                  setMessagingUser(null);
+                  try {
+                    await addDoc(collection(db, 'notifications'), {
+                      userId: messagingUser.id,
+                      title: formData.get('subject'),
+                      message: formData.get('message'),
+                      isRead: false,
+                      createdAt: serverTimestamp(),
+                    });
+                    alert('Mesaj gönderildi!');
+                    setMessagingUser(null);
+                  } catch (err) {
+                    console.error("Message Error:", err);
+                    alert("Mesaj gönderilirken bir hata oluştu.");
+                  }
                 }} className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Konu</label>
@@ -2581,38 +2687,29 @@ function AdminDashboard() {
                   e.preventDefault();
                   const formData = new FormData(e.currentTarget);
                   const payload = Object.fromEntries(formData.entries());
-                  
-                  const res = await fetch(`/api/admin/categories/${editingCategory.id}`, {
-                    method: 'PATCH',
-                    headers: { 
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${token}` 
-                    },
-                    body: JSON.stringify(payload)
-                  });
-
-                  if (res.ok) {
+                  try {
+                    await updateDoc(doc(db, 'categories', editingCategory.id), payload);
                     alert('Kategori güncellendi!');
                     setEditingCategory(null);
                     fetchData();
-                  } else {
-                    const err = await res.json();
+                  } catch (err: any) {
+                    console.error(err);
                     alert('Hata: ' + err.message);
                   }
                 }} className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Kategori Adı</label>
-                    <input name="name" defaultValue={editingCategory.name} required className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
+                    <input name="name" onFocus={(e) => e.target.select()} defaultValue={editingCategory.name} required className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Açıklama</label>
-                    <textarea name="description" defaultValue={editingCategory.description} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500 h-24 resize-none" />
+                    <textarea name="description" onFocus={(e) => e.target.select()} defaultValue={editingCategory.description} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500 h-24 resize-none" />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest">İkon (Lucide Adı)</label>
-                    <input name="icon" defaultValue={editingCategory.icon} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" placeholder="Örn: Package, ShoppingCart" />
+                    <input name="icon" onFocus={(e) => e.target.select()} defaultValue={editingCategory.icon} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" placeholder="Örn: Package, ShoppingCart" />
                   </div>
 
                   <button type="submit" className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-700 transition shadow-xl shadow-blue-200">
@@ -2629,6 +2726,39 @@ function AdminDashboard() {
 }
 
 export default function App() {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Get user profile from Firestore
+        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        if (userDoc.exists()) {
+          setUser({ ...firebaseUser, ...userDoc.data() });
+        } else {
+          setUser(firebaseUser);
+        }
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-500 font-black uppercase tracking-widest text-xs">Yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Router>
       <Navbar />

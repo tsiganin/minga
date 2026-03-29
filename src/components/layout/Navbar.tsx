@@ -2,21 +2,18 @@ import * as React from "react";
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuList,
-} from "@/src/components/ui/navigation-menu";
-import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from "@/src/components/ui/sheet";
-
-import { Button, buttonVariants } from "@/src/components/ui/button";
-import { Menu, Search, User, LogOut, Shield, Package, Bell, Coins } from "lucide-react";
+import { Button } from "@/src/components/ui/button";
+import { Menu, Search, User, LogOut, Shield, Bell, Coins } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { collection, query, where, onSnapshot, doc, getDoc, updateDoc, orderBy } from "firebase/firestore";
+import { db, auth } from "@/src/firebase";
 
 interface RouteProps {
   href: string;
@@ -47,56 +44,41 @@ export const Navbar = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const token = localStorage.getItem('token');
-  const userRole = localStorage.getItem('userRole');
   const location = useLocation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    if (token) {
-      fetchUser();
-      fetchNotifications();
-      const interval = setInterval(fetchNotifications, 30000); // Check every 30s
-      return () => clearInterval(interval);
-    }
-  }, [token]);
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Fetch user data from Firestore
+        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        if (userDoc.exists()) {
+          setUser({ uid: firebaseUser.uid, ...userDoc.data() });
+        }
 
-  const fetchUser = async () => {
-    try {
-      const res = await fetch('/auth/me', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data);
+        // Listen for notifications
+        const q = query(
+          collection(db, 'notifications'), 
+          where('userId', '==', firebaseUser.uid),
+          orderBy('createdAt', 'desc')
+        );
+        const unsubscribeNotifications = onSnapshot(q, (snapshot) => {
+          setNotifications(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        });
+        return () => unsubscribeNotifications();
+      } else {
+        setUser(null);
+        setNotifications([]);
       }
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    });
 
-  const fetchNotifications = async () => {
-    try {
-      const res = await fetch('/api/notifications', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setNotifications(data);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    return () => unsubscribeAuth();
+  }, []);
 
   const markAsRead = async (id: string) => {
     try {
-      await fetch(`/api/notifications/${id}/read`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+      await updateDoc(doc(db, 'notifications', id), { isRead: true });
     } catch (err) {
       console.error(err);
     }
@@ -111,11 +93,13 @@ export const Navbar = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userId');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/login');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -160,14 +144,12 @@ export const Navbar = () => {
 
             <div className="h-8 w-px bg-slate-200" />
 
-            {token ? (
+            {user ? (
               <div className="flex items-center gap-3">
-                {user && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 rounded-xl border border-amber-100">
-                    <Coins className="w-4 h-4 text-amber-500" />
-                    <span className="text-sm font-black text-amber-700">{user.points || 0} Puan</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 rounded-xl border border-amber-100">
+                  <Coins className="w-4 h-4 text-amber-500" />
+                  <span className="text-sm font-black text-amber-700">{user.points || 0} Puan</span>
+                </div>
 
                 <div className="relative">
                   <button 
@@ -206,7 +188,9 @@ export const Navbar = () => {
                               >
                                 <p className="font-black text-sm text-slate-900 mb-1">{n.title}</p>
                                 <p className="text-xs text-slate-500 font-medium leading-relaxed">{n.message}</p>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">{new Date(n.createdAt).toLocaleDateString('tr-TR')}</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">
+                                  {n.createdAt?.seconds ? new Date(n.createdAt.seconds * 1000).toLocaleDateString('tr-TR') : '...'}
+                                </p>
                               </div>
                             ))
                           ) : (
@@ -220,7 +204,7 @@ export const Navbar = () => {
                   </AnimatePresence>
                 </div>
 
-                {userRole === 'admin' && (
+                {user.role === 'admin' && (
                   <Link to="/admin" className="p-2.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
                     <Shield className="h-5 w-5" />
                   </Link>
@@ -277,7 +261,7 @@ export const Navbar = () => {
                   </nav>
 
                   <div className="mt-auto space-y-4">
-                    {token ? (
+                    {user ? (
                       <>
                         <Link to="/profile" onClick={() => setIsOpen(false)} className="flex items-center gap-4 text-xl font-black text-slate-900 no-underline py-4">
                           <User className="w-6 h-6 text-blue-600" /> Profilim
