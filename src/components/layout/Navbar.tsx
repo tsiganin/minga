@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import {
   NavigationMenu,
@@ -15,7 +15,8 @@ import {
 } from "@/src/components/ui/sheet";
 
 import { Button, buttonVariants } from "@/src/components/ui/button";
-import { Menu, Search, User, LogOut, Shield, Package } from "lucide-react";
+import { Menu, Search, User, LogOut, Shield, Package, Bell, Coins } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 
 interface RouteProps {
   href: string;
@@ -43,11 +44,65 @@ const routeList: RouteProps[] = [
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('userRole');
   const location = useLocation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (token) {
+      fetchUser();
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 30000); // Check every 30s
+      return () => clearInterval(interval);
+    }
+  }, [token]);
+
+  const fetchUser = async () => {
+    try {
+      const res = await fetch('/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch('/api/notifications', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const markAsRead = async (id: string) => {
+    try {
+      await fetch(`/api/notifications/${id}/read`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,6 +162,64 @@ export const Navbar = () => {
 
             {token ? (
               <div className="flex items-center gap-3">
+                {user && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 rounded-xl border border-amber-100">
+                    <Coins className="w-4 h-4 text-amber-500" />
+                    <span className="text-sm font-black text-amber-700">{user.points || 0} Puan</span>
+                  </div>
+                )}
+
+                <div className="relative">
+                  <button 
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className="p-2.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all relative"
+                  >
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
+                    )}
+                  </button>
+
+                  <AnimatePresence>
+                    {showNotifications && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute right-0 mt-4 w-80 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden"
+                      >
+                        <div className="p-5 border-b border-slate-50 flex justify-between items-center">
+                          <h4 className="font-black text-slate-900">Bildirimler</h4>
+                          <span className="text-[10px] font-black uppercase text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">{unreadCount} Yeni</span>
+                        </div>
+                        <div className="max-h-[400px] overflow-y-auto">
+                          {notifications.length > 0 ? (
+                            notifications.map((n) => (
+                              <div 
+                                key={n.id} 
+                                onClick={() => {
+                                  markAsRead(n.id);
+                                  if (n.link) navigate(n.link);
+                                  setShowNotifications(false);
+                                }}
+                                className={`p-5 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer ${!n.isRead ? 'bg-blue-50/30' : ''}`}
+                              >
+                                <p className="font-black text-sm text-slate-900 mb-1">{n.title}</p>
+                                <p className="text-xs text-slate-500 font-medium leading-relaxed">{n.message}</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">{new Date(n.createdAt).toLocaleDateString('tr-TR')}</p>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-10 text-center">
+                              <p className="text-sm font-bold text-slate-400">Henüz bildiriminiz yok.</p>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
                 {userRole === 'admin' && (
                   <Link to="/admin" className="p-2.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
                     <Shield className="h-5 w-5" />

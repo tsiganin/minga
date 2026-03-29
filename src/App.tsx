@@ -26,6 +26,27 @@ const SECTORS = [
   'Ambalaj & Baskı', 'Sağlık & Medikal', 'Diğer',
 ];
 
+const UNITS = [
+  { value: 'adet', label: 'Adet' },
+  { value: 'kg', label: 'Kilogram (kg)' },
+  { value: 'ton', label: 'Ton' },
+  { value: 'litre', label: 'Litre' },
+  { value: 'm2', label: 'Metrekare (m²)' },
+  { value: 'm3', label: 'Metreküp (m³)' },
+  { value: 'paket', label: 'Paket' },
+  { value: 'koli', label: 'Koli' },
+  { value: 'palet', label: 'Palet' },
+];
+
+function formatPrice(price: number | string) {
+  const num = typeof price === 'string' ? parseFloat(price) : price;
+  if (isNaN(num)) return '0';
+  return new Intl.NumberFormat('tr-TR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(num);
+}
+
 function BackButton({ to, label = "Geri Dön" }: { to?: string, label?: string }) {
   const navigate = useNavigate();
   const content = (
@@ -159,13 +180,24 @@ function LoginPage() {
 function RegisterPage() {
   const [role, setRole] = useState<'buyer' | 'supplier' | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get referral code from URL
+  const queryParams = new URLSearchParams(location.search);
+  const referredBy = queryParams.get('ref');
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!role) { setError('Lütfen hesap türünüzü seçin.'); return; }
+    if (!agreedToTerms || !agreedToPrivacy) {
+      setError('Lütfen kullanım koşullarını ve gizlilik politikasını kabul edin.');
+      return;
+    }
     setError('');
     setLoading(true);
 
@@ -175,6 +207,7 @@ function RegisterPage() {
       password: (f.elements.namedItem('password') as HTMLInputElement).value,
       phone: (f.elements.namedItem('phone') as HTMLInputElement).value,
       role,
+      referredBy, // Include referral code
     };
 
     if (role === 'buyer') {
@@ -306,6 +339,31 @@ function RegisterPage() {
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
                   </div>
+                </div>
+
+                <div className="space-y-3 py-2">
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <input 
+                      type="checkbox" 
+                      checked={agreedToTerms}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
+                      className="mt-1 w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" 
+                    />
+                    <span className="text-sm text-slate-600 font-medium leading-relaxed">
+                      <Link to="/terms" className="text-blue-600 hover:underline">Kullanım Koşullarını</Link> okudum ve kabul ediyorum.
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <input 
+                      type="checkbox" 
+                      checked={agreedToPrivacy}
+                      onChange={(e) => setAgreedToPrivacy(e.target.checked)}
+                      className="mt-1 w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" 
+                    />
+                    <span className="text-sm text-slate-600 font-medium leading-relaxed">
+                      <Link to="/privacy" className="text-blue-600 hover:underline">Gizlilik Politikasını</Link> okudum ve kabul ediyorum.
+                    </span>
+                  </label>
                 </div>
 
                 <button type="submit" disabled={loading} className={`w-full py-4 rounded-2xl font-black text-white text-lg transition-all shadow-xl mt-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] ${role === 'supplier' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-100' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-100'}`}>
@@ -812,7 +870,7 @@ function GroupBuyPage() {
                   <p className="text-slate-500 text-sm font-medium mb-6 line-clamp-2">{gb.description}</p>
                   
                   <div className="flex items-end gap-1 mb-6">
-                    <span className="text-3xl font-black text-slate-900">{gb.unitPrice}₺</span>
+                    <span className="text-3xl font-black text-slate-900">{formatPrice(gb.unitPrice)}₺</span>
                     <span className="text-slate-400 font-bold mb-1">/ {gb.unit}</span>
                   </div>
 
@@ -877,6 +935,9 @@ function CreateGroupBuyPage() {
   const [error, setError] = useState('');
   const [categories, setCategories] = useState<any[]>([]);
   const [images, setImages] = useState<string[]>([]);
+  const [unitPrice, setUnitPrice] = useState<number>(0);
+  const [targetQuantity, setTargetQuantity] = useState<number>(0);
+  const [totalTargetPrice, setTotalTargetPrice] = useState<number>(0);
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -885,6 +946,10 @@ function CreateGroupBuyPage() {
     if (!token) navigate('/login');
     fetchCategories();
   }, [token, navigate]);
+
+  useEffect(() => {
+    setTotalTargetPrice(unitPrice * targetQuantity);
+  }, [unitPrice, targetQuantity]);
 
   const fetchCategories = async () => {
     try {
@@ -1021,18 +1086,55 @@ function CreateGroupBuyPage() {
               </div>
               <div>
                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Birim</label>
-                <input name="unit" required placeholder="kg, adet, ton" className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:border-blue-500 outline-none transition-all font-bold" />
+                <select 
+                  name="unit" 
+                  required 
+                  className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:border-blue-500 outline-none transition-all font-bold"
+                >
+                  {UNITS.map(u => (
+                    <option key={u.value} value={u.value}>{u.label}</option>
+                  ))}
+                </select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Hedef Miktar</label>
-                <input name="targetQuantity" type="number" step="0.01" required placeholder="1000" className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:border-blue-500 outline-none transition-all font-bold" />
+                <input 
+                  name="targetQuantity" 
+                  type="number" 
+                  step="0.01" 
+                  required 
+                  onChange={(e) => setTargetQuantity(parseFloat(e.target.value) || 0)}
+                  placeholder="1000" 
+                  className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
+                />
               </div>
               <div>
                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Birim Fiyat (₺)</label>
-                <input name="unitPrice" type="number" step="0.01" required placeholder="150.00" className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:border-blue-500 outline-none transition-all font-bold" />
+                <input 
+                  name="unitPrice" 
+                  type="number" 
+                  step="0.01" 
+                  required 
+                  onChange={(e) => setUnitPrice(parseFloat(e.target.value) || 0)}
+                  placeholder="150.00" 
+                  className="w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:border-blue-500 outline-none transition-all font-bold" 
+                />
               </div>
+            </div>
+
+            <div className="p-6 bg-blue-50 rounded-3xl border border-blue-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-black text-blue-600 uppercase tracking-widest mb-1">Hedef Toplam Ciro</p>
+                  <p className="text-3xl font-black text-slate-900">₺{formatPrice(totalTargetPrice)}</p>
+                </div>
+                <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                  <TrendingUp className="w-6 h-6" />
+                </div>
+              </div>
+              <p className="text-[10px] text-blue-500 mt-3 font-bold italic uppercase tracking-wider">* Birim fiyat ve hedef miktar çarpılarak otomatik hesaplanır.</p>
             </div>
             <div>
               <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Son Katılım Tarihi & Saati (24s)</label>
@@ -1230,7 +1332,7 @@ function GroupBuyDetailPage() {
               <div className="grid grid-cols-2 gap-6">
                 <div className="bg-slate-50 p-6 rounded-3xl">
                   <span className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Birim Fiyat</span>
-                  <span className="text-2xl font-black text-slate-900">{gb.unitPrice}₺</span>
+                  <span className="text-2xl font-black text-slate-900">{formatPrice(gb.unitPrice)}₺</span>
                 </div>
                 <div className="bg-slate-50 p-6 rounded-3xl">
                   <span className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Birim</span>
@@ -1266,6 +1368,21 @@ function GroupBuyDetailPage() {
             <div className="bg-slate-900 text-white rounded-[3rem] p-10 shadow-2xl shadow-slate-200 sticky top-10">
               <h3 className="text-2xl font-black mb-8">{existingOrder ? 'Siparişi Düzenle' : 'Alıma Katıl'}</h3>
               
+              <div className="mb-8 p-6 bg-white/5 rounded-3xl border border-white/10">
+                <p className="text-xs font-black text-blue-400 uppercase tracking-widest mb-3">Paylaş & Puan Kazan</p>
+                <p className="text-sm text-slate-300 font-medium mb-4 leading-relaxed">Bu ilanı arkadaşlarınızla paylaşın, sizin linkinizle üye olan her kişi için 100 puan kazanın!</p>
+                <button 
+                  onClick={() => {
+                    const url = `${window.location.origin}/register?ref=${currentUser?.id}`;
+                    navigator.clipboard.writeText(url);
+                    alert('Referans linkiniz kopyalandı!');
+                  }}
+                  className="w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-black transition-all flex items-center justify-center gap-2"
+                >
+                  <Users className="w-4 h-4" /> Linki Kopyala
+                </button>
+              </div>
+
               {message && <div className={`mb-6 p-4 rounded-2xl text-sm font-bold ${message.includes('✅') ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{message}</div>}
 
               <div className="space-y-6">
@@ -1288,7 +1405,7 @@ function GroupBuyDetailPage() {
                 <div className="pt-4 border-t border-white/10">
                   <div className="flex justify-between items-center mb-6">
                     <span className="text-slate-400 font-bold">Toplam Tutar</span>
-                    <span className="text-3xl font-black">{(quantity * gb.unitPrice).toFixed(2)}₺</span>
+                    <span className="text-3xl font-black">{formatPrice(quantity * gb.unitPrice)}₺</span>
                   </div>
                   <button 
                     onClick={handleJoin}

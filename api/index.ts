@@ -31,6 +31,12 @@ class User {
   @Column({ type: "varchar", default: "buyer" })
   role!: string; // 'admin', 'supplier', 'buyer'
 
+  @Column({ type: "integer", default: 0 })
+  points!: number;
+
+  @Column({ type: "varchar", nullable: true })
+  referredBy!: string; // userId of the referrer
+
   @Column({ type: "boolean", default: true })
   isActive!: boolean;
 
@@ -203,6 +209,30 @@ class GroupBuyOrderHistory {
   createdAt!: Date;
 }
 
+@Entity()
+class Notification {
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
+
+  @Column({ type: "varchar" })
+  userId!: string;
+
+  @Column({ type: "varchar" })
+  title!: string;
+
+  @Column({ type: "text" })
+  message!: string;
+
+  @Column({ type: "boolean", default: false })
+  isRead!: boolean;
+
+  @Column({ type: "varchar", nullable: true })
+  link!: string;
+
+  @CreateDateColumn()
+  createdAt!: Date;
+}
+
 // --- Database Setup ---
 const isVercel = process.env.VERCEL === "1";
 const dbPath = isVercel ? "/tmp/database.sqlite" : "database.sqlite";
@@ -212,7 +242,7 @@ const AppDataSource = new DataSource({
   database: dbPath,
   synchronize: true,
   logging: false,
-  entities: [User, BuyerProfile, SupplierProfile, GroupBuy, GroupBuyOrder, GroupBuyOrderHistory, Category],
+  entities: [User, BuyerProfile, SupplierProfile, GroupBuy, GroupBuyOrder, GroupBuyOrderHistory, Category, Notification],
 });
 
 async function ensureDbInitialized() {
@@ -282,15 +312,33 @@ app.use(async (req, res, next) => {
 
 // --- Auth Routes ---
 app.post("/auth/register", async (req, res) => {
-  const { email, password, role, fullName, companyName, phone, taxNumber } = req.body;
+  const { email, password, role, fullName, companyName, phone, taxNumber, referredBy } = req.body;
   const userRepo = AppDataSource.getRepository(User);
   
   const existing = await userRepo.findOneBy({ email });
   if (existing) return res.status(400).json({ message: "Bu e-posta zaten kayıtlı" });
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const user = userRepo.create({ email, passwordHash, role });
+  const user = userRepo.create({ email, passwordHash, role, referredBy });
   await userRepo.save(user);
+
+  // Award points to referrer if exists
+  if (referredBy) {
+    const referrer = await userRepo.findOneBy({ id: referredBy });
+    if (referrer) {
+      referrer.points = (referrer.points || 0) + 100; // 100 points for referral
+      await userRepo.save(referrer);
+      
+      // Notify referrer
+      const notifRepo = AppDataSource.getRepository(Notification);
+      const notif = notifRepo.create({
+        userId: referrer.id,
+        title: "Referans Puanı!",
+        message: "Paylaştığınız link üzerinden yeni bir üye kayıt oldu. 100 puan kazandınız!",
+      });
+      await notifRepo.save(notif);
+    }
+  }
 
   if (role === "supplier") {
     const supplierRepo = AppDataSource.getRepository(SupplierProfile);
@@ -398,15 +446,43 @@ app.post("/api/group-buys", authenticate, async (req: any, res) => {
     return res.status(403).json({ message: "Sadece tedarikçiler grup alımı başlatabilir" });
   }
   const repo = AppDataSource.getRepository(GroupBuy);
-  const groupBuy = repo.create({
+  const userRepo = AppDataSource.getRepository(User);
+  const notifRepo = AppDataSource.getRepository(Notification);
+
+  const newGroupBuy = repo.create({
     ...req.body,
     imagesBase64: req.body.imagesBase64 ? JSON.stringify(req.body.imagesBase64) : null,
     supplierId: req.user.sub,
     currentQuantity: 0,
     status: "active"
   });
-  await repo.save(groupBuy);
-  res.json(groupBuy);
+  const savedGb = await repo.save(newGroupBuy);
+
+  // Award points for creating a listing
+  const user = await userRepo.findOneBy({ id: req.user.sub });
+  if (user) {
+    user.points = (user.points || 0) + 50; // 50 points for creating a listing
+    await userRepo.save(user);
+  }
+
+  // Notify other suppliers in the same category
+  const otherSuppliers = await userRepo.find({
+    where: { role: "supplier", isActive: true }
+  });
+
+  for (const supplier of otherSuppliers) {
+    if (supplier.id !== req.user.sub) {
+      const notif = notifRepo.create({
+        userId: supplier.id,
+        title: "Yeni İlan!",
+        message: `${req.body.category} kategorisinde yeni bir ilan yayınlandı: ${req.body.productName}`,
+        link: `/group-buys/${(savedGb as any).id}`
+      });
+      await notifRepo.save(notif);
+    }
+  }
+
+  res.json(savedGb);
 });
 
 app.patch("/api/group-buys/:id", authenticate, async (req: any, res) => {
@@ -511,6 +587,29 @@ app.get("/api/my-orders", authenticate, async (req: any, res) => {
   }));
 
   res.json(enrichedOrders);
+});
+
+// --- Notification Routes ---
+app.get("/api/notifications", authenticate, async (req: any, res) => {
+  await ensureDbInitialized();
+  const repo = AppDataSource.getRepository(Notification);
+  const notifications = await repo.find({
+    where: { userId: req.user.sub },
+    order: { createdAt: "DESC" },
+    take: 20
+  });
+  res.json(notifications);
+});
+
+app.patch("/api/notifications/:id/read", authenticate, async (req: any, res) => {
+  await ensureDbInitialized();
+  const repo = AppDataSource.getRepository(Notification);
+  const notif = await repo.findOneBy({ id: req.params.id, userId: req.user.sub });
+  if (notif) {
+    notif.isRead = true;
+    await repo.save(notif);
+  }
+  res.json({ success: true });
 });
 
 // --- Admin Routes ---
