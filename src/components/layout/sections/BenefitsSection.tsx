@@ -15,27 +15,27 @@ interface BenefitsProps {
 const benefits: BenefitsProps[] = [
   {
     icon: Blocks,
-    title: "Build Brand Trust",
+    title: "Güven İnşa Edin",
     description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Amet unde eveniet.",
+      "Topluluk temelli alımlarla hem alıcılar hem de tedarikçiler arasında güçlü bir güven bağı oluşturun.",
   },
   {
     icon: LineChart,
-    title: "More Leads",
+    title: "Daha Fazla Satış",
     description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Amet unde eveniet.",
+      "Tedarikçiler için tek seferde büyük hacimli satış yapma imkanı sağlayarak operasyonel maliyetleri düşürün.",
   },
   {
     icon: Wallet,
-    title: "Higher Conversions",
+    title: "Yüksek Tasarruf",
     description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Amet unde eveniet.",
+      "Alıcılar için toplu alım gücünü kullanarak bireysel alımlara göre çok daha uygun fiyatlara ulaşın.",
   },
   {
     icon: Sparkles,
-    title: "Test Marketing Ideas",
+    title: "Pazar Analizi",
     description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Amet unde eveniet.",
+      "Hangi ürünlerin daha çok talep gördüğünü gerçek zamanlı verilerle takip edin ve stratejinizi belirleyin.",
   },
 ];
 
@@ -44,15 +44,14 @@ export const BenefitsSection = () => {
     <section id="benefits" className="container py-24 sm:py-32">
       <div className="grid lg:grid-cols-2 place-items-center lg:gap-24">
         <div>
-          <h2 className="text-lg text-primary mb-2 tracking-wider">Benefits</h2>
+          <h2 className="text-lg text-primary mb-2 tracking-wider">Avantajlar</h2>
 
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Your Shortcut to Success
+            Başarıya Giden Kısayolunuz
           </h2>
 
           <p className="text-xl text-muted-foreground mb-8">
-            Lorem ipsum dolor sit amet consectetur, adipisicing elit. Guia
-            repellat officiis ad odit delectus ducimus error eligendi.
+            Minga, geleneksel ticaretin zorluklarını ortadan kaldırarak herkesin kazandığı bir ekosistem sunar.
           </p>
         </div>
 

@@ -18,39 +18,39 @@ interface FeatureProps {
 const features: FeatureProps[] = [
   {
     icon: "MousePointer2",
-    title: "Customizable",
+    title: "Kolay Kullanım",
     description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Amet unde eveniet.",
+      "Saniyeler içinde ilan açın veya mevcut bir gruba katılın. Karmaşık süreçler yok.",
   },
   {
     icon: "Paintbrush",
-    title: "Beautiful UI",
+    title: "Modern Arayüz",
     description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Amet unde eveniet.",
+      "Kullanıcı dostu ve şık tasarımıyla tüm işlemlerinizi keyifle gerçekleştirin.",
   },
   {
     icon: "Zap",
-    title: "Fast Performance",
+    title: "Hızlı İşlem",
     description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Amet unde eveniet.",
+      "Gerçek zamanlı güncellemeler ve hızlı altyapı ile fırsatları kaçırmayın.",
   },
   {
     icon: "ShieldCheck",
-    title: "Secure",
+    title: "Güvenli Ödeme",
     description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Amet unde eveniet.",
+      "Tüm ödemeleriniz ve verileriniz en üst düzey güvenlik standartlarıyla korunur.",
   },
   {
     icon: "Settings",
-    title: "Easy Setup",
+    title: "Esnek Yönetim",
     description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Amet unde eveniet.",
+      "İlanlarınızı kolayca yönetin, katılımcıları takip edin ve süreci kontrol edin.",
   },
   {
     icon: "MessageSquare",
-    title: "Community Support",
+    title: "Canlı Destek",
     description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Amet unde eveniet.",
+      "Herhangi bir sorunuz olduğunda topluluk ve destek ekibimiz her zaman yanınızda.",
   },
 ];
 
@@ -67,17 +67,15 @@ export const FeaturesSection = () => {
   return (
     <section id="features" className="container py-24 sm:py-32">
       <h2 className="text-lg text-primary text-center mb-2 tracking-wider">
-        Features
+        Özellikler
       </h2>
 
       <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
-        What Makes Us Different
+        Bizi Farklı Kılan Nedir?
       </h2>
 
       <h3 className="md:w-1/2 mx-auto text-xl text-center text-muted-foreground mb-8">
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptatem
-        fugiat, odit similique quasi sint reiciendis quidem iure veritatis optio
-        facere tenetur.
+        Minga, toplu alım süreçlerini dijitalleştirerek herkes için erişilebilir ve karlı hale getirir.
       </h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

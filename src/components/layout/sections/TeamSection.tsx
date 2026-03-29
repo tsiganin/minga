@@ -22,7 +22,7 @@ interface SocialNetworkProps {
 
 const teamList: TeamProps[] = [
   {
-    imageUrl: "https://github.com/shadcn.png",
+    imageUrl: "https://i.pravatar.cc/150?u=john_team",
     firstName: "John",
     lastName: "Doe",
     positions: ["Frontend Developer", "UI Designer"],
@@ -42,7 +42,7 @@ const teamList: TeamProps[] = [
     ],
   },
   {
-    imageUrl: "https://github.com/shadcn.png",
+    imageUrl: "https://i.pravatar.cc/150?u=jane_team",
     firstName: "Jane",
     lastName: "Doe",
     positions: ["Backend Developer", "DevOps Engineer"],
@@ -58,7 +58,7 @@ const teamList: TeamProps[] = [
     ],
   },
   {
-    imageUrl: "https://github.com/shadcn.png",
+    imageUrl: "https://i.pravatar.cc/150?u=alex_team",
     firstName: "Alex",
     lastName: "Smith",
     positions: ["Fullstack Developer", "Project Manager"],
@@ -74,7 +74,7 @@ const teamList: TeamProps[] = [
     ],
   },
   {
-    imageUrl: "https://github.com/shadcn.png",
+    imageUrl: "https://i.pravatar.cc/150?u=caleb_team",
     firstName: "Caleb",
     lastName: "Williams",
     positions: ["Mobile Developer", "QA Engineer"],
@@ -129,6 +129,7 @@ export const TeamSection = () => {
                     alt=""
                     className="w-full aspect-square object-cover transition-all duration-200 group-hover/hover:scale-105"
                     referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
                   />
                 </div>
                 <CardTitle className="py-6 pb-4 px-6">

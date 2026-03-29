@@ -422,7 +422,7 @@ function ProfilePage() {
             <div className="flex items-center gap-6">
               <div className="relative flex-shrink-0">
                 <div onClick={() => fileRef.current?.click()} className="w-24 h-24 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 overflow-hidden cursor-pointer hover:border-blue-400 transition flex items-center justify-center group">
-                  {profile.avatarBase64 ? <img src={profile.avatarBase64} alt="avatar" className="w-full h-full object-cover" /> : <span className="text-3xl">📷</span>}
+                  {profile.avatarBase64 ? <img src={profile.avatarBase64} alt="avatar" className="w-full h-full object-cover" crossOrigin="anonymous" referrerPolicy="no-referrer" /> : <span className="text-3xl">📷</span>}
                 </div>
                 <input ref={fileRef} type="file" accept="image/*" onChange={handleAvatar} className="hidden" />
               </div>
@@ -544,7 +544,7 @@ function HomePage() {
       <div key={gb.id} onClick={() => navigate(`/group-buys/${gb.id}`)} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all overflow-hidden group cursor-pointer">
         {firstImage && (
           <div className="aspect-video w-full overflow-hidden">
-            <img src={firstImage} alt={gb.productName} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+            <img src={firstImage} alt={gb.productName} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" crossOrigin="anonymous" referrerPolicy="no-referrer" />
           </div>
         )}
         <div className="p-8">
@@ -593,11 +593,12 @@ function HomePage() {
     );
   };
 
-  if (token) {
-    return (
-      <main className="min-h-screen bg-slate-50 text-slate-900 font-sans pt-20">
-        <div className="max-w-7xl mx-auto px-10 py-12">
-          {/* Quick Actions Section */}
+  return (
+    <div className="min-h-screen bg-background text-slate-900 font-sans">
+      {!token && <HeroSection />}
+      
+      <div id="listings" className={`max-w-7xl mx-auto px-6 lg:px-10 py-12 ${token ? 'pt-28' : ''}`}>
+        {token && (
           <div className="grid md:grid-cols-2 gap-8 mb-16">
             <div 
               onClick={() => navigate('/group-buys')}
@@ -623,60 +624,60 @@ function HomePage() {
               </span>
             </div>
           </div>
+        )}
 
-          {/* Listings Section */}
-          <div className="mb-12">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex gap-8">
-                <button 
-                  onClick={() => setActiveTab('new')}
-                  className={`text-2xl font-black pb-2 transition-all ${activeTab === 'new' ? 'text-slate-900 border-b-4 border-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                  Yeni İlanlar
-                </button>
-                <button 
-                  onClick={() => setActiveTab('popular')}
-                  className={`text-2xl font-black pb-2 transition-all ${activeTab === 'popular' ? 'text-slate-900 border-b-4 border-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                  Popüler İlanlar
-                </button>
-              </div>
-              <Link to="/group-buys" className="text-blue-600 font-black hover:underline underline-offset-4">Tümünü Gör</Link>
+        <div className="mb-12">
+          {!token && (
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">Aktif Fırsatlar</h2>
+              <p className="text-xl text-slate-500 max-w-2xl mx-auto">Şu anda devam eden en popüler ve yeni grup alımlarını keşfedin.</p>
             </div>
-
-            {loading ? (
-              <div className="py-20 text-center font-bold text-slate-400">Yükleniyor...</div>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {sortedGroupBuys.slice(0, 6).map(renderGroupBuyCard)}
-                {sortedGroupBuys.length === 0 && (
-                  <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border border-dashed border-slate-200">
-                    <p className="text-xl font-black text-slate-400">Henüz ilan bulunmuyor.</p>
-                  </div>
-                )}
-              </div>
-            )}
+          )}
+          
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex gap-8">
+              <button 
+                onClick={() => setActiveTab('new')}
+                className={`text-2xl font-black pb-2 transition-all ${activeTab === 'new' ? 'text-slate-900 border-b-4 border-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                Yeni İlanlar
+              </button>
+              <button 
+                onClick={() => setActiveTab('popular')}
+                className={`text-2xl font-black pb-2 transition-all ${activeTab === 'popular' ? 'text-slate-900 border-b-4 border-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                Popüler İlanlar
+              </button>
+            </div>
+            <Link to="/group-buys" className="text-blue-600 font-black hover:underline underline-offset-4">Tümünü Gör</Link>
           </div>
+
+          {loading ? (
+            <div className="py-20 text-center font-bold text-slate-400">Yükleniyor...</div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {sortedGroupBuys.slice(0, 6).map(renderGroupBuyCard)}
+              {sortedGroupBuys.length === 0 && (
+                <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border border-dashed border-slate-200">
+                  <p className="text-xl font-black text-slate-400">Henüz ilan bulunmuyor.</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
+      </div>
 
-        <FooterSection />
-      </main>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-background">
-      <HeroSection />
-      <SponsorsSection />
-      <BenefitsSection />
-      <FeaturesSection />
-      <ServicesSection />
-      <TestimonialSection />
-      <TeamSection />
-      <CommunitySection />
-      <PricingSection />
-      <ContactSection />
-      <FAQSection />
+      {!token && (
+        <>
+          <BenefitsSection />
+          <FeaturesSection />
+          <ServicesSection />
+          <TestimonialSection />
+          <PricingSection />
+          <FAQSection />
+          <ContactSection />
+        </>
+      )}
       <FooterSection />
     </div>
   );
@@ -755,7 +756,7 @@ function GroupBuyPage() {
                   }
                   return firstImage ? (
                     <div className="aspect-video w-full overflow-hidden">
-                      <img src={firstImage} alt={gb.productName} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                      <img src={firstImage} alt={gb.productName} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" crossOrigin="anonymous" referrerPolicy="no-referrer" />
                     </div>
                   ) : null;
                 })()}
@@ -931,7 +932,7 @@ function CreateGroupBuyPage() {
               <div className="grid grid-cols-4 gap-4 mb-4">
                 {images.map((img, idx) => (
                   <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border border-slate-100 group">
-                    <img src={img} alt={`preview-${idx}`} className="w-full h-full object-cover" />
+                    <img src={img} alt={`preview-${idx}`} className="w-full h-full object-cover" crossOrigin="anonymous" referrerPolicy="no-referrer" />
                     <button 
                       type="button"
                       onClick={() => removeImage(idx)}
@@ -1150,7 +1151,7 @@ function GroupBuyDetailPage() {
             <div className="bg-white rounded-[3rem] overflow-hidden shadow-sm border border-slate-100">
               <div className="aspect-video bg-slate-100 relative group">
                 {gb.images && gb.images.length > 0 ? (
-                  <img src={gb.images[activeImage]} alt={gb.productName} className="w-full h-full object-cover" />
+                  <img src={gb.images[activeImage]} alt={gb.productName} className="w-full h-full object-cover" crossOrigin="anonymous" referrerPolicy="no-referrer" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-slate-300">
                     <Package className="w-20 h-20" />
@@ -1176,7 +1177,7 @@ function GroupBuyDetailPage() {
                       onClick={() => setActiveImage(idx)}
                       className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition ${activeImage === idx ? 'border-blue-500' : 'border-transparent'}`}
                     >
-                      <img src={img} alt={`thumb-${idx}`} className="w-full h-full object-cover" />
+                      <img src={img} alt={`thumb-${idx}`} className="w-full h-full object-cover" crossOrigin="anonymous" referrerPolicy="no-referrer" />
                     </button>
                   ))}
                 </div>
@@ -1332,7 +1333,7 @@ function GroupBuyDetailPage() {
                   <div className="grid grid-cols-5 gap-3 mb-4">
                     {editingImages.map((img, idx) => (
                       <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-slate-100 group">
-                        <img src={img} alt={`preview-${idx}`} className="w-full h-full object-cover" />
+                        <img src={img} alt={`preview-${idx}`} className="w-full h-full object-cover" crossOrigin="anonymous" referrerPolicy="no-referrer" />
                         <button 
                           type="button"
                           onClick={() => setEditingImages(prev => prev.filter((_, i) => i !== idx))}

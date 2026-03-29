@@ -1,6 +1,7 @@
 import { Badge } from "@/src/components/ui/badge";
 import { Button } from "@/src/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export const HeroSection = () => {
   return (
@@ -16,21 +17,23 @@ export const HeroSection = () => {
 
           <div className="max-w-screen-md mx-auto text-center text-4xl md:text-6xl font-bold">
             <h1>
-              Experience the
+              Minga ile
               <span className="text-transparent px-2 bg-gradient-to-r from-[#D247BF] to-primary bg-clip-text">
-                Shadcn
+                Toplu Alım
               </span>
-              landing page
+              Gücünü Keşfedin
             </h1>
           </div>
 
           <p className="max-w-screen-sm mx-auto text-xl text-muted-foreground">
-            {`We're more than just a tool, we're a community of passionate creators. Get access to exclusive resources, tutorials, and support.`}
+            Birlikte alalım, birlikte kazanalım. Minga, alıcıları ve tedarikçileri bir araya getirerek en iyi fiyatlara ulaşmanızı sağlar.
           </p>
 
           <div className="space-y-4 md:space-y-0 md:space-x-4">
-            <Button className="w-5/6 md:w-1/4 font-bold group/arrow">
-              Get Started
+            <Button className="w-5/6 md:w-1/4 font-bold group/arrow" onClick={() => {
+              document.getElementById('listings')?.scrollIntoView({ behavior: 'smooth' });
+            }}>
+              İlanları İncele
               <ArrowRight className="size-5 ml-2 group-hover/arrow:translate-x-1 transition-transform" />
             </Button>
 
@@ -39,12 +42,9 @@ export const HeroSection = () => {
               variant="secondary"
               className="w-5/6 md:w-1/4 font-bold"
             >
-              <a
-                href="https://github.com/nobruf/shadcn-landing-page.git"
-                target="_blank"
-              >
-                Github respository
-              </a>
+              <Link to="/register">
+                Hemen Kayıt Ol
+              </Link>
             </Button>
           </div>
         </div>
@@ -55,9 +55,10 @@ export const HeroSection = () => {
             width={1200}
             height={630}
             className="w-full md:w-[1200px] mx-auto rounded-lg relative leading-none flex items-center border border-t-2 border-secondary  border-t-primary/30"
-            src="https://res.cloudinary.com/dbzv9xfjp/image/upload/v1723499276/og-images/shadcn-vue.jpg"
+            src="https://images.unsplash.com/photo-1557821552-17105176677c?q=80&w=1600&auto=format&fit=crop"
             alt="dashboard"
             referrerPolicy="no-referrer"
+            crossOrigin="anonymous"
           />
 
           <div className="absolute bottom-0 left-0 w-full h-20 md:h-28 bg-gradient-to-b from-transparent to-background rounded-lg"></div>

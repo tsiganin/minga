@@ -23,7 +23,7 @@ interface TestimonialProps {
 
 const testimonials: TestimonialProps[] = [
   {
-    image: "https://github.com/shadcn.png",
+    image: "https://i.pravatar.cc/150?u=john",
     name: "John Doe",
     userName: "@john_doe",
     comment:
@@ -31,7 +31,7 @@ const testimonials: TestimonialProps[] = [
     rating: 5.0,
   },
   {
-    image: "https://github.com/shadcn.png",
+    image: "https://i.pravatar.cc/150?u=jane",
     name: "Jane Doe",
     userName: "@jane_doe",
     comment:
@@ -39,7 +39,7 @@ const testimonials: TestimonialProps[] = [
     rating: 4.8,
   },
   {
-    image: "https://github.com/shadcn.png",
+    image: "https://i.pravatar.cc/150?u=alex",
     name: "Alex Smith",
     userName: "@alex_smith",
     comment:
@@ -47,7 +47,7 @@ const testimonials: TestimonialProps[] = [
     rating: 4.9,
   },
   {
-    image: "https://github.com/shadcn.png",
+    image: "https://i.pravatar.cc/150?u=caleb",
     name: "Caleb Williams",
     userName: "@caleb_williams",
     comment:
@@ -55,7 +55,7 @@ const testimonials: TestimonialProps[] = [
     rating: 5.0,
   },
   {
-    image: "https://github.com/shadcn.png",
+    image: "https://i.pravatar.cc/150?u=winona",
     name: "Winona Ryder",
     userName: "@winona_ryder",
     comment:
@@ -63,7 +63,7 @@ const testimonials: TestimonialProps[] = [
     rating: 4.8,
   },
   {
-    image: "https://github.com/shadcn.png",
+    image: "https://i.pravatar.cc/150?u=paris",
     name: "Paris Hilton",
     userName: "@paris_hilton",
     comment:
@@ -96,6 +96,8 @@ export const TestimonialSection = () => {
                 <AvatarImage
                   alt="user avatar"
                   src={image}
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
                 />
                 <AvatarFallback>SV</AvatarFallback>
               </AvatarRoot>
