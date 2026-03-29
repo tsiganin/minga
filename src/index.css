@@ -1,7 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
   --color-background: hsl(var(--background));
@@ -179,8 +181,25 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(215, 95%, 53%, 0.03) 0, transparent 50%), 
+      radial-gradient(at 100% 0%, hsla(142, 70%, 45%, 0.03) 0, transparent 50%);
+    background-attachment: fixed;
   }
   html {
     scroll-behavior: smooth;
+  }
+
+  .grid-pattern {
+    background-image: radial-gradient(circle at 1px 1px, hsl(var(--border)) 1px, transparent 0);
+    background-size: 40px 40px;
+  }
+
+  .glass-card {
+    @apply bg-white/70 dark:bg-card/70 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-xl;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-br from-slate-900 to-slate-500 bg-clip-text text-transparent dark:from-white dark:to-slate-400;
   }
 }

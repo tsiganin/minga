@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate, useLocation, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, Package, TrendingUp, Clock, LayoutGrid, Search, Users, Shield, Activity, Trash2, CheckCircle, XCircle, BarChart3, Mail, Edit, Upload, FileSpreadsheet, List, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { ChevronDown, Package, TrendingUp, Clock, LayoutGrid, Search, Users, Shield, Activity, Trash2, CheckCircle, XCircle, BarChart3, Mail, Edit, Upload, FileSpreadsheet, List, ArrowLeft, Eye, EyeOff, ArrowRight, Plus } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 import { Navbar } from "@/src/components/layout/Navbar";
@@ -541,55 +541,80 @@ function HomePage() {
     }
 
     return (
-      <div key={gb.id} onClick={() => navigate(`/group-buys/${gb.id}`)} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all overflow-hidden group cursor-pointer">
+      <motion.div 
+        key={gb.id} 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        onClick={() => navigate(`/group-buys/${gb.id}`)} 
+        className="glass-card rounded-[2.5rem] overflow-hidden group cursor-pointer transition-all duration-500 hover:-translate-y-2"
+      >
         {firstImage && (
-          <div className="aspect-video w-full overflow-hidden">
-            <img src={firstImage} alt={gb.productName} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" referrerPolicy="no-referrer" />
+          <div className="aspect-[16/10] w-full overflow-hidden relative">
+            <img src={firstImage} alt={gb.productName} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute bottom-4 left-6 right-6 flex justify-between items-center translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+              <span className="bg-white/20 backdrop-blur-md text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest border border-white/20">
+                {gb.category || 'Genel'}
+              </span>
+            </div>
           </div>
         )}
         <div className="p-8">
-          <div className="flex justify-between items-start mb-4">
-            <span className="bg-blue-50 text-blue-600 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider">
-              {gb.category || 'Genel'}
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+              <span className="text-blue-600 text-[10px] font-black uppercase tracking-widest">Aktif Kampanya</span>
+            </div>
+            <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {daysLeft > 0 ? `${daysLeft} GÜN KALDI` : 'SÜRE DOLDU'}
             </span>
-            <span className="text-slate-400 text-xs font-bold">{daysLeft > 0 ? `${daysLeft} gün kaldı` : 'Süre doldu'}</span>
           </div>
-          <h3 className="text-2xl font-black text-slate-900 mb-2 group-hover:text-blue-600 transition">{gb.productName}</h3>
           
-          <div className="flex items-end gap-1 mb-6">
-            <span className="text-3xl font-black text-slate-900">{gb.unitPrice}₺</span>
-            <span className="text-slate-400 font-bold mb-1">/ {gb.unit}</span>
+          <h3 className="text-2xl font-display font-black text-slate-900 mb-3 group-hover:text-blue-600 transition-colors line-clamp-1">{gb.productName}</h3>
+          
+          <div className="flex items-baseline gap-1.5 mb-8">
+            <span className="text-3xl font-display font-black text-slate-900 tracking-tight">{gb.unitPrice}₺</span>
+            <span className="text-slate-400 font-bold text-sm">/ {gb.unit}</span>
           </div>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm font-bold">
-                <span className="text-slate-500">Katılım</span>
-                <span className="text-blue-600">%{Math.min(100, Math.round(progress))}</span>
+          <div className="space-y-6">
+            <div className="space-y-2.5">
+              <div className="flex justify-between items-end">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Toplanan Miktar</span>
+                <span className="text-blue-600 font-display font-black text-lg">%{Math.min(100, Math.round(progress))}</span>
               </div>
-              <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-blue-500 transition-all duration-500" 
-                  style={{ width: `${Math.min(100, progress)}%` }}
+              <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-200/50">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  whileInView={{ width: `${Math.min(100, progress)}%` }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                  className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.3)]"
                 />
+              </div>
+              <div className="flex justify-between text-[10px] font-bold text-slate-400">
+                <span>{gb.currentQuantity} {gb.unit}</span>
+                <span>Hedef: {gb.targetQuantity} {gb.unit}</span>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm font-bold">
-                <span className="text-slate-500">Kalan Süre</span>
-                <span className="text-emerald-600">%{Math.max(0, 100 - Math.round(timeProgress))}</span>
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+              <div className="flex -space-x-2">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="w-7 h-7 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-400">
+                    {String.fromCharCode(64 + i)}
+                  </div>
+                ))}
+                <div className="w-7 h-7 rounded-full border-2 border-white bg-blue-50 flex items-center justify-center text-[8px] font-black text-blue-600">
+                  +12
+                </div>
               </div>
-              <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-emerald-400 transition-all duration-500" 
-                  style={{ width: `${Math.max(0, 100 - timeProgress)}%` }}
-                />
-              </div>
+              <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest group-hover:translate-x-1 transition-transform">İncele →</span>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   };
 
@@ -599,30 +624,44 @@ function HomePage() {
       
       <div id="listings" className={`max-w-7xl mx-auto px-6 lg:px-10 py-12 ${token ? 'pt-28' : ''}`}>
         {token && (
-          <div className="grid md:grid-cols-2 gap-8 mb-16">
-            <div 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20">
+            <motion.div 
+              whileHover={{ y: -8 }}
               onClick={() => navigate('/group-buys')}
-              className="bg-blue-600 rounded-[3rem] p-12 text-white shadow-2xl shadow-blue-200 cursor-pointer hover:scale-[1.02] transition transform group"
+              className="glass-card rounded-[3rem] p-10 md:p-14 cursor-pointer group relative overflow-hidden"
             >
-              <div className="text-5xl mb-6">🔍</div>
-              <h2 className="text-4xl font-black mb-4">İlanları Gör</h2>
-              <p className="text-blue-100 text-lg font-medium mb-8">Aktif grup alımlarını inceleyin, toplu alım gücüne hemen ortak olun.</p>
-              <span className="inline-flex items-center gap-2 font-black text-xl group-hover:gap-4 transition-all">
-                Keşfetmeye Başla →
-              </span>
-            </div>
+              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 rounded-full -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-700" />
+              <div className="relative z-10">
+                <div className="w-20 h-20 bg-blue-600 rounded-[2rem] flex items-center justify-center mb-10 shadow-2xl shadow-blue-600/30 group-hover:rotate-6 transition-transform">
+                  <Search className="text-white w-10 h-10" />
+                </div>
+                <h2 className="text-4xl md:text-5xl font-display font-black text-slate-900 mb-6 tracking-tight">İlanları Keşfet</h2>
+                <p className="text-slate-500 text-lg md:text-xl font-medium mb-10 leading-relaxed max-w-md">Aktif grup alımlarını inceleyin, toplu alım gücüne hemen ortak olun.</p>
+                <div className="flex items-center gap-3 text-blue-600 font-black text-lg group-hover:gap-5 transition-all">
+                  <span>Keşfetmeye Başla</span>
+                  <ArrowRight className="w-6 h-6" />
+                </div>
+              </div>
+            </motion.div>
 
-            <div 
+            <motion.div 
+              whileHover={{ y: -8 }}
               onClick={() => navigate('/group-buys/create')}
-              className="bg-emerald-500 rounded-[3rem] p-12 text-white shadow-2xl shadow-emerald-200 cursor-pointer hover:scale-[1.02] transition transform group"
+              className="glass-card rounded-[3rem] p-10 md:p-14 cursor-pointer group relative overflow-hidden"
             >
-              <div className="text-5xl mb-6">📢</div>
-              <h2 className="text-4xl font-black mb-4">İlan Aç</h2>
-              <p className="text-emerald-50/80 text-lg font-medium mb-8">Kendi ürününüz için grup alımı başlatın, binlerce alıcıya tek seferde ulaşın.</p>
-              <span className="inline-flex items-center gap-2 font-black text-xl group-hover:gap-4 transition-all">
-                Kampanya Başlat →
-              </span>
-            </div>
+              <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-600/5 rounded-full -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-700" />
+              <div className="relative z-10">
+                <div className="w-20 h-20 bg-emerald-600 rounded-[2rem] flex items-center justify-center mb-10 shadow-2xl shadow-emerald-600/30 group-hover:rotate-6 transition-transform">
+                  <Plus className="text-white w-10 h-10" />
+                </div>
+                <h2 className="text-4xl md:text-5xl font-display font-black text-slate-900 mb-6 tracking-tight">İlan Başlat</h2>
+                <p className="text-slate-500 text-lg md:text-xl font-medium mb-10 leading-relaxed max-w-md">Kendi ürününüz için grup alımı başlatın, binlerce alıcıya tek seferde ulaşın.</p>
+                <div className="flex items-center gap-3 text-emerald-600 font-black text-lg group-hover:gap-5 transition-all">
+                  <span>Kampanya Başlat</span>
+                  <ArrowRight className="w-6 h-6" />
+                </div>
+              </div>
+            </motion.div>
           </div>
         )}
 

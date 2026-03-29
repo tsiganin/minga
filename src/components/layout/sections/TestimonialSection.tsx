@@ -1,17 +1,10 @@
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/src/components/ui/card";
-import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@/src/components/ui/avatar";
-
-const AvatarRoot = Avatar;
+import { Star } from "lucide-react";
+import { motion } from "motion/react";
 
 interface TestimonialProps {
   image: string;
@@ -25,90 +18,96 @@ const testimonials: TestimonialProps[] = [
   {
     image: "https://i.pravatar.cc/150?u=ayse",
     name: "Ayşe Yılmaz",
-    userName: "@ayse_tekstil",
-    comment:
-      "Minga sayesinde kumaş alımlarımızda %20 tasarruf sağladık. Küçük bir işletme olarak büyüklerin fiyatlarına ulaşabilmek harika.",
-    rating: 5.0,
+    userName: "Tekstil İşletmecisi",
+    comment: "Minga sayesinde kumaş alımlarımızda %20 tasarruf sağladık. Küçük bir işletme olarak büyüklerin fiyatlarına ulaşabilmek harika.",
+    rating: 5,
   },
   {
     image: "https://i.pravatar.cc/150?u=mehmet",
     name: "Mehmet Demir",
-    userName: "@mehmet_elektronik",
-    comment:
-      "Tedarikçi bulma ve güvenli ödeme süreçleri çok şeffaf. Minga ile işimizi büyütmek çok daha kolaylaştı.",
-    rating: 4.8,
+    userName: "Elektronik Tedarikçisi",
+    comment: "Tedarikçi bulma ve güvenli ödeme süreçleri çok şeffaf. Minga ile işimizi büyütmek çok daha kolaylaştı.",
+    rating: 5,
   },
   {
     image: "https://i.pravatar.cc/150?u=can",
     name: "Can Özkan",
-    userName: "@can_gida",
-    comment:
-      "Toplu alım gücü gerçekten işe yarıyor. Minga ekibi her adımda destek oluyor, lojistik süreçleri çok başarılı.",
-    rating: 4.9,
+    userName: "Gıda Toptancısı",
+    comment: "Toplu alım gücü gerçekten işe yarıyor. Minga ekibi her adımda destek oluyor, lojistik süreçleri çok başarılı.",
+    rating: 5,
   },
   {
     image: "https://i.pravatar.cc/150?u=zeynep",
     name: "Zeynep Aksoy",
-    userName: "@zeynep_mobilya",
-    comment:
-      "Platformun kullanımı çok kolay. İlanları takip etmek ve katılmak saniyeler sürüyor. Kesinlikle tavsiye ederim.",
-    rating: 5.0,
+    userName: "Mobilya Tasarımcısı",
+    comment: "Platformun kullanımı çok kolay. İlanları takip etmek ve katılmak saniyeler sürüyor. Kesinlikle tavsiye ederim.",
+    rating: 5,
   },
   {
     image: "https://i.pravatar.cc/150?u=ali",
     name: "Ali Kaya",
-    userName: "@ali_insaat",
-    comment:
-      "İnşaat malzemeleri alımında Minga'yı kullanıyoruz. Hem fiyat avantajı hem de kaliteli tedarikçilerle çalışmak büyük artı.",
-    rating: 4.8,
+    userName: "İnşaat Mühendisi",
+    comment: "İnşaat malzemeleri alımında Minga'yı kullanıyoruz. Hem fiyat avantajı hem de kaliteli tedarikçilerle çalışmak büyük artı.",
+    rating: 5,
   },
   {
     image: "https://i.pravatar.cc/150?u=fatma",
     name: "Fatma Şahin",
-    userName: "@fatma_medikal",
-    comment:
-      "Medikal sektöründe güven çok önemli. Minga'nın tedarikçi doğrulama süreci bize bu güveni fazlasıyla veriyor.",
-    rating: 4.7,
+    userName: "Medikal Satın Alma",
+    comment: "Medikal sektöründe güven çok önemli. Minga'nın tedarikçi doğrulama süreci bize bu güveni fazlasıyla veriyor.",
+    rating: 5,
   },
 ];
 
 export const TestimonialSection = () => {
   return (
-    <section id="testimonials" className="container py-24 sm:py-32">
-      <div className="text-center mb-8">
-        <h2 className="text-lg text-primary text-center mb-2 tracking-wider">
-          Referanslarımız
+    <section id="testimonials" className="container py-24 sm:py-32 px-4">
+      <div className="text-center max-w-3xl mx-auto mb-20">
+        <span className="text-blue-600 font-black uppercase tracking-[0.2em] text-xs mb-4 block">Referanslarımız</span>
+        <h2 className="text-4xl md:text-6xl font-display font-black text-slate-900 mb-8 leading-tight tracking-tight">
+          Kullanıcılarımız <span className="text-gradient">Ne Diyor?</span>
         </h2>
-
-        <h2 className="text-3xl md:text-4xl font-bold mb-4">
-          Kullanıcılarımız Ne Diyor?
-        </h2>
+        <p className="text-xl text-slate-500 leading-relaxed font-medium">
+          Binlerce mutlu kullanıcı Minga ile ticaretini büyütüyor ve tasarruf ediyor.
+        </p>
       </div>
 
-      <div className="columns-1 md:columns-2 lg:columns-3 space-y-4 gap-4">
-        {testimonials.map(({ image, name, userName, comment, rating }) => (
-          <Card
-            key={userName}
-            className="break-inside-avoid bg-muted/50 dark:bg-card"
+      <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+        {testimonials.map(({ image, name, userName, comment, rating }, index) => (
+          <motion.div
+            key={name}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: index * 0.1 }}
+            className="glass-card p-8 rounded-[2.5rem] break-inside-avoid group hover:-translate-y-2 transition-all duration-500"
           >
-            <CardHeader className="flex flex-row items-center gap-4 pb-2">
-              <AvatarRoot>
+            <div className="flex items-center gap-4 mb-6">
+              <Avatar className="w-14 h-14 border-2 border-white shadow-lg">
                 <AvatarImage
-                  alt="user avatar"
+                  alt={name}
                   src={image}
                   referrerPolicy="no-referrer"
                 />
-                <AvatarFallback>SV</AvatarFallback>
-              </AvatarRoot>
+                <AvatarFallback>{name[0]}</AvatarFallback>
+              </Avatar>
 
-              <div className="flex flex-col">
-                <CardTitle className="text-lg">{name}</CardTitle>
-                <CardDescription>{userName}</CardDescription>
+              <div>
+                <h4 className="font-display font-black text-slate-900">{name}</h4>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{userName}</p>
               </div>
-            </CardHeader>
+            </div>
 
-            <CardContent>{comment}</CardContent>
-          </Card>
+            <div className="flex gap-1 mb-6">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className={`w-4 h-4 ${i < rating ? 'text-orange-400 fill-orange-400' : 'text-slate-200'}`} />
+              ))}
+            </div>
+
+            <p className="text-slate-600 text-base leading-relaxed font-medium italic">
+              "{comment}"
+            </p>
+          </motion.div>
         ))}
       </div>
     </section>

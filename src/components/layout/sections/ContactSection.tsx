@@ -1,10 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/src/components/ui/card";
-import { Building2, Clock, Mail, Phone } from "lucide-react";
+import { Building2, Clock, Mail, Phone, Send } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,6 +20,7 @@ import {
   SelectValue,
 } from "@/src/components/ui/select";
 import { Textarea } from "@/src/components/ui/textarea";
+import { motion } from "motion/react";
 
 const formSchema = z.object({
   firstName: z.string().min(2).max(255),
@@ -52,166 +47,139 @@ export const ContactSection = () => {
   }
 
   return (
-    <section id="contact" className="container py-24 sm:py-32">
-      <div className="grid lg:grid-cols-2 gap-10">
-        <div>
-          <div className="mb-4">
-            <h2 className="text-lg text-primary mb-2 tracking-wider">
-              İletişim
-            </h2>
-
-            <h2 className="text-3xl md:text-4xl font-bold">
-              Bizimle Bağlantı Kurun
-            </h2>
-          </div>
-          <p className="mb-8 text-muted-foreground lg:w-5/6">
+    <section id="contact" className="container py-24 sm:py-32 px-4">
+      <div className="grid lg:grid-cols-2 gap-16 items-start">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+        >
+          <span className="text-blue-600 font-black uppercase tracking-[0.2em] text-xs mb-4 block">İletişim</span>
+          <h2 className="text-4xl md:text-6xl font-display font-black text-slate-900 mb-8 leading-tight tracking-tight">
+            Bizimle <span className="text-gradient">Bağlantı Kurun</span>
+          </h2>
+          <p className="text-xl text-slate-500 mb-12 leading-relaxed font-medium">
             Sorularınız, önerileriniz veya iş birliği talepleriniz için bize her zaman ulaşabilirsiniz. Minga ekibi olarak size yardımcı olmaktan mutluluk duyarız.
           </p>
 
-          <div className="flex flex-col gap-4">
-            <div className="flex gap-2">
-              <Building2 className="text-primary" />
-              <div>Levent, Büyükdere Cd. No:123, 34394 Şişli/İstanbul</div>
-            </div>
-
-            <div className="flex gap-2">
-              <Phone className="text-primary" />
-              <div>+90 (212) 123 45 67</div>
-            </div>
-
-            <div className="flex gap-2">
-              <Mail className="text-primary" />
-              <div>destek@minga.com</div>
-            </div>
-
-            <div className="flex gap-2">
-              <Clock className="text-primary" />
-              <div>
-                Pazartesi - Cuma: 09:00 - 18:00
+          <div className="space-y-8">
+            {[
+              { icon: Building2, text: "Levent, Büyükdere Cd. No:123, 34394 Şişli/İstanbul", label: "Adres" },
+              { icon: Phone, text: "+90 (212) 123 45 67", label: "Telefon" },
+              { icon: Mail, text: "destek@minga.com", label: "E-posta" },
+              { icon: Clock, text: "Pazartesi - Cuma: 09:00 - 18:00", label: "Çalışma Saatleri" },
+            ].map((item, i) => (
+              <div key={i} className="flex gap-6 items-start group">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                  <item.icon className="w-6 h-6 text-blue-600 group-hover:text-white" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">{item.label}</p>
+                  <p className="text-slate-900 font-bold">{item.text}</p>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
-        </div>
+        </motion.div>
 
-        <Card className="bg-muted/50 dark:bg-card">
-          <CardHeader className="text-primary text-2xl"> </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="grid w-full gap-4"
-              >
-                <div className="flex flex-col md:flex-row gap-8">
-                  <FormField
-                    control={form.control}
-                    name="firstName"
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <FormLabel>Adınız</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ahmet" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="lastName"
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <FormLabel>Soyadınız</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Yılmaz" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="flex flex-col md:flex-row gap-8">
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <FormLabel>E-posta</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="ahmet@ornek.com"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="subject"
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <FormLabel>Konu</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Bir konu seçin" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Genel Bilgi">
-                              Genel Bilgi
-                            </SelectItem>
-                            <SelectItem value="Tedarikçi Başvurusu">
-                              Tedarikçi Başvurusu
-                            </SelectItem>
-                            <SelectItem value="Teknik Destek">
-                              Teknik Destek
-                            </SelectItem>
-                            <SelectItem value="İş Birliği">İş Birliği</SelectItem>
-                            <SelectItem value="Diğer">
-                              Diğer
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          className="glass-card p-8 md:p-12 rounded-[3rem]"
+        >
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="message"
+                  name="firstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Mesajınız</FormLabel>
+                      <FormLabel className="text-slate-900 font-bold">Adınız</FormLabel>
                       <FormControl>
-                        <Textarea
-                          rows={5}
-                          placeholder="Mesajınızı buraya yazın..."
-                          className="resize-none"
-                          {...field}
-                        />
+                        <Input placeholder="Ahmet" {...field} className="h-14 rounded-xl border-slate-200 bg-white/50" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-slate-900 font-bold">Soyadınız</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Yılmaz" {...field} className="h-14 rounded-xl border-slate-200 bg-white/50" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-                <Button className="mt-4">Mesaj Gönder</Button>
-              </form>
-            </Form>
-          </CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-slate-900 font-bold">E-posta</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="ahmet@ornek.com" {...field} className="h-14 rounded-xl border-slate-200 bg-white/50" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="subject"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-slate-900 font-bold">Konu</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="h-14 rounded-xl border-slate-200 bg-white/50">
+                            <SelectValue placeholder="Bir konu seçin" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Genel Bilgi">Genel Bilgi</SelectItem>
+                          <SelectItem value="Tedarikçi Başvurusu">Tedarikçi Başvurusu</SelectItem>
+                          <SelectItem value="Teknik Destek">Teknik Destek</SelectItem>
+                          <SelectItem value="İş Birliği">İş Birliği</SelectItem>
+                          <SelectItem value="Diğer">Diğer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-          <CardFooter></CardFooter>
-        </Card>
+              <FormField
+                control={form.control}
+                name="message"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-slate-900 font-bold">Mesajınız</FormLabel>
+                    <FormControl>
+                      <Textarea rows={5} placeholder="Mesajınızı buraya yazın..." className="rounded-xl border-slate-200 bg-white/50 resize-none" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button size="lg" className="w-full h-16 rounded-2xl text-lg font-bold bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-200 transition-all duration-300">
+                <Send className="w-5 h-5 mr-2" />
+                Mesaj Gönder
+              </Button>
+            </form>
+          </Form>
+        </motion.div>
       </div>
     </section>
   );

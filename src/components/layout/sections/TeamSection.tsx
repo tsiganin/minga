@@ -1,11 +1,5 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/src/components/ui/card";
 import { Github, Linkedin, Twitter } from "lucide-react";
+import { motion } from "motion/react";
 
 interface TeamProps {
   imageUrl: string;
@@ -27,135 +21,105 @@ const teamList: TeamProps[] = [
     lastName: "Başer",
     positions: ["Kurucu", "Ürün Yöneticisi"],
     socialNetworks: [
-      {
-        name: "Linkedin",
-        url: "https://www.linkedin.com/",
-      },
-      {
-        name: "Twitter",
-        url: "https://twitter.com/",
-      },
+      { name: "Linkedin", url: "https://www.linkedin.com/" },
+      { name: "Twitter", url: "https://twitter.com/" },
     ],
   },
   {
     imageUrl: "https://i.pravatar.cc/150?u=ayse_team",
     firstName: "Ayşe",
     lastName: "Yılmaz",
-    positions: ["Operasyon Direktörü", "Tedarik Zinciri Uzmanı"],
+    positions: ["Operasyon Direktörü"],
     socialNetworks: [
-      {
-        name: "Linkedin",
-        url: "https://www.linkedin.com/",
-      },
+      { name: "Linkedin", url: "https://www.linkedin.com/" },
     ],
   },
   {
     imageUrl: "https://i.pravatar.cc/150?u=mehmet_team",
     firstName: "Mehmet",
     lastName: "Demir",
-    positions: ["Teknoloji Lideri", "Yazılım Mimarı"],
+    positions: ["Teknoloji Lideri"],
     socialNetworks: [
-      {
-        name: "Linkedin",
-        url: "https://www.linkedin.com/",
-      },
-      {
-        name: "Github",
-        url: "https://github.com/",
-      },
+      { name: "Linkedin", url: "https://www.linkedin.com/" },
+      { name: "Github", url: "https://github.com/" },
     ],
   },
   {
     imageUrl: "https://i.pravatar.cc/150?u=selin_team",
     firstName: "Selin",
     lastName: "Kaya",
-    positions: ["Pazarlama Müdürü", "Topluluk Yöneticisi"],
+    positions: ["Pazarlama Müdürü"],
     socialNetworks: [
-      {
-        name: "Linkedin",
-        url: "https://www.linkedin.com/",
-      },
-      {
-        name: "Twitter",
-        url: "https://twitter.com/",
-      },
+      { name: "Linkedin", url: "https://www.linkedin.com/" },
+      { name: "Twitter", url: "https://twitter.com/" },
     ],
   },
 ];
 
 const socialIcon = (name: string) => {
   switch (name) {
-    case "Linkedin":
-      return <Linkedin className="size-5" />;
-    case "Github":
-      return <Github className="size-5" />;
-    case "Twitter":
-      return <Twitter className="size-5" />;
+    case "Linkedin": return <Linkedin className="w-4 h-4" />;
+    case "Github": return <Github className="w-4 h-4" />;
+    case "Twitter": return <Twitter className="w-4 h-4" />;
   }
 };
 
 export const TeamSection = () => {
   return (
-    <section id="team" className="container py-24 sm:py-32">
-      <div className="text-center mb-8">
-        <h2 className="text-lg text-primary text-center mb-2 tracking-wider">
-          Ekibimiz
+    <section id="team" className="container py-24 sm:py-32 px-4">
+      <div className="text-center max-w-3xl mx-auto mb-20">
+        <span className="text-blue-600 font-black uppercase tracking-[0.2em] text-xs mb-4 block">Ekibimiz</span>
+        <h2 className="text-4xl md:text-6xl font-display font-black text-slate-900 mb-8 leading-tight tracking-tight">
+          Uzmanlarımızla <span className="text-gradient">Tanışın</span>
         </h2>
-
-        <h2 className="text-3xl md:text-4xl font-bold mb-4">
-          Uzmanlarımızla Tanışın
-        </h2>
+        <p className="text-xl text-slate-500 leading-relaxed font-medium">
+          Minga'nın arkasındaki tutkulu ekip, ticareti herkes için daha erişilebilir kılmak için çalışıyor.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-        {teamList.map(
-          ({ imageUrl, firstName, lastName, positions, socialNetworks }) => (
-            <Card
-              key={firstName}
-              className="bg-muted/50 dark:bg-card flex flex-col h-full overflow-hidden group/hover"
-            >
-              <CardHeader className="p-0 gap-0">
-                <div className="h-full overflow-hidden">
-                  <img
-                    src={imageUrl}
-                    alt=""
-                    className="w-full aspect-square object-cover transition-all duration-200 group-hover/hover:scale-105"
-                    referrerPolicy="no-referrer"
-                  />
+        {teamList.map(({ imageUrl, firstName, lastName, positions, socialNetworks }, index) => (
+          <motion.div
+            key={firstName}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: index * 0.1 }}
+            className="group relative"
+          >
+            <div className="relative overflow-hidden rounded-[3rem] aspect-[4/5] mb-6 shadow-2xl shadow-slate-200">
+              <img
+                src={imageUrl}
+                alt={`${firstName} ${lastName}`}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-blue-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end justify-center pb-8">
+                <div className="flex gap-3">
+                  {socialNetworks.map(({ name, url }) => (
+                    <a
+                      key={name}
+                      href={url}
+                      target="_blank"
+                      className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white hover:text-blue-600 transition-all duration-300"
+                    >
+                      {socialIcon(name)}
+                    </a>
+                  ))}
                 </div>
-                <CardTitle className="py-6 pb-4 px-6">
-                  {firstName}
-                  <span className="text-primary ml-2">{lastName}</span>
-                </CardTitle>
-              </CardHeader>
+              </div>
+            </div>
 
-              {positions.map((position, index) => (
-                <CardContent
-                  key={index}
-                  className={`pb-0 text-muted-foreground px-6 ${
-                    index === positions.length - 1 && "pb-6"
-                  }`}
-                >
-                  {position}
-                  {index < positions.length - 1 && ","}
-                </CardContent>
-              ))}
-
-              <CardFooter className="space-x-4 mt-auto px-6 pb-6">
-                {socialNetworks.map(({ name, url }) => (
-                  <a
-                    key={name}
-                    href={url}
-                    target="_blank"
-                    className="hover:opacity-80 transition-all"
-                  >
-                    {socialIcon(name)}
-                  </a>
-                ))}
-              </CardFooter>
-            </Card>
-          )
-        )}
+            <div className="text-center">
+              <h3 className="text-2xl font-display font-black text-slate-900 mb-1">
+                {firstName} <span className="text-blue-600">{lastName}</span>
+              </h3>
+              <p className="text-sm text-slate-400 font-bold uppercase tracking-widest">
+                {positions.join(" & ")}
+              </p>
+            </div>
+          </motion.div>
+        ))}
       </div>
     </section>
   );

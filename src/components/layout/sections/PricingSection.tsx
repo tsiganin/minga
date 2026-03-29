@@ -1,23 +1,11 @@
 import { Badge } from "@/src/components/ui/badge";
 import { Button } from "@/src/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/src/components/ui/card";
 import { Check } from "lucide-react";
-
-enum PopularPlanType {
-  NO = 0,
-  YES = 1,
-}
+import { motion } from "motion/react";
 
 interface PricingProps {
   title: string;
-  popular: PopularPlanType;
+  popular: boolean;
   price: number;
   description: string;
   buttonText: string;
@@ -27,10 +15,9 @@ interface PricingProps {
 const pricingList: PricingProps[] = [
   {
     title: "Alıcı",
-    popular: PopularPlanType.NO,
+    popular: false,
     price: 0,
-    description:
-      "Bireysel alıcılar ve küçük işletmeler için tamamen ücretsiz.",
+    description: "Bireysel alıcılar ve küçük işletmeler için tamamen ücretsiz.",
     buttonText: "Hemen Başla",
     benefitList: [
       "Sınırsız ilana katılım",
@@ -42,10 +29,9 @@ const pricingList: PricingProps[] = [
   },
   {
     title: "Tedarikçi",
-    popular: PopularPlanType.YES,
+    popular: true,
     price: 499,
-    description:
-      "Ürünlerini binlerce alıcıya ulaştırmak isteyen tedarikçiler için.",
+    description: "Ürünlerini binlerce alıcıya ulaştırmak isteyen tedarikçiler için.",
     buttonText: "Tedarikçi Ol",
     benefitList: [
       "Sınırsız ilan oluşturma",
@@ -57,10 +43,9 @@ const pricingList: PricingProps[] = [
   },
   {
     title: "Kurumsal",
-    popular: PopularPlanType.NO,
+    popular: false,
     price: 1499,
-    description:
-      "Büyük ölçekli operasyonlar ve özel entegrasyonlar için.",
+    description: "Büyük ölçekli operasyonlar ve özel entegrasyonlar için.",
     buttonText: "Bize Ulaşın",
     benefitList: [
       "Özel API erişimi",
@@ -74,77 +59,68 @@ const pricingList: PricingProps[] = [
 
 export const PricingSection = () => {
   return (
-    <section id="pricing" className="container py-24 sm:py-32">
-      <h2 className="text-lg text-primary text-center mb-2 tracking-wider">
-        Fiyatlandırma
-      </h2>
-
-      <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
-        Size Uygun Planı Seçin
-      </h2>
-
-      <h3 className="md:w-1/2 mx-auto text-xl text-center text-muted-foreground mb-8">
-        Minga'da her bütçeye ve ihtiyaca uygun bir çözüm var. Hemen katılın ve toplu alım gücünden yararlanın.
-      </h3>
+    <section id="pricing" className="container py-24 sm:py-32 px-4">
+      <div className="text-center max-w-3xl mx-auto mb-20">
+        <span className="text-blue-600 font-black uppercase tracking-[0.2em] text-xs mb-4 block">Fiyatlandırma</span>
+        <h2 className="text-4xl md:text-6xl font-display font-black text-slate-900 mb-8 leading-tight tracking-tight">
+          Size Uygun <span className="text-gradient">Planı Seçin</span>
+        </h2>
+        <p className="text-xl text-slate-500 leading-relaxed font-medium">
+          Minga'da her bütçeye ve ihtiyaca uygun bir çözüm var. Hemen katılın ve toplu alım gücünden yararlanın.
+        </p>
+      </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {pricingList.map(
-          ({ title, popular, price, description, buttonText, benefitList }) => (
-            <Card
-              key={title}
-              className={
-                popular === PopularPlanType.YES
-                  ? "drop-shadow-xl shadow-black/10 dark:shadow-white/10 border-[1.5px] border-primary"
-                  : ""
-              }
-            >
-              <CardHeader>
-                <CardTitle className="pb-2 flex justify-between">
-                  {title}
-                  {popular === PopularPlanType.YES && (
-                    <Badge
-                      variant="secondary"
-                      className="text-sm text-primary"
-                    >
-                      Most popular
-                    </Badge>
-                  )}
-                </CardTitle>
-                <CardDescription className="pb-4">
-                  {description}
-                </CardDescription>
+        {pricingList.map(({ title, popular, price, description, buttonText, benefitList }, index) => (
+          <motion.div
+            key={title}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: index * 0.1 }}
+            className={`glass-card p-10 rounded-[3rem] relative flex flex-col ${
+              popular ? 'border-2 border-blue-600 shadow-2xl shadow-blue-200 scale-105 z-10' : ''
+            }`}
+          >
+            {popular && (
+              <Badge className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-1 rounded-full text-sm font-bold border-none">
+                EN POPÜLER
+              </Badge>
+            )}
 
-                <div>
-                  <span className="text-3xl font-bold">${price}</span>
-                  <span className="text-muted-foreground"> /month</span>
+            <div className="mb-8">
+              <h3 className="text-2xl font-display font-black text-slate-900 mb-2">{title}</h3>
+              <p className="text-slate-500 text-sm font-medium leading-relaxed">{description}</p>
+            </div>
+
+            <div className="mb-8">
+              <span className="text-5xl font-display font-black text-slate-900">₺{price}</span>
+              <span className="text-slate-400 font-bold ml-2">/ay</span>
+            </div>
+
+            <div className="space-y-4 mb-10 flex-grow">
+              {benefitList.map((benefit) => (
+                <div key={benefit} className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                    <Check className="w-3 h-3 text-blue-600" />
+                  </div>
+                  <span className="text-slate-600 text-sm font-medium">{benefit}</span>
                 </div>
-              </CardHeader>
+              ))}
+            </div>
 
-              <CardContent className="flex flex-col gap-4 pb-8">
-                {benefitList.map((benefit: string) => (
-                  <span
-                    key={benefit}
-                    className="flex"
-                  >
-                    <Check className="text-primary mr-2" />
-                    <h3>{benefit}</h3>
-                  </span>
-                ))}
-              </CardContent>
-
-              <CardFooter>
-                <Button
-                  variant={
-                    popular === PopularPlanType.YES ? "default" : "secondary"
-                  }
-                  className="w-full"
-                >
-                  {buttonText}
-                </Button>
-              </CardFooter>
-            </Card>
-          )
-        )}
+            <Button
+              variant={popular ? "default" : "outline"}
+              className={`w-full h-14 rounded-2xl font-bold text-base transition-all duration-300 ${
+                popular 
+                  ? 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200' 
+                  : 'border-2 border-slate-200 hover:border-blue-600 hover:text-blue-600'
+              }`}
+            >
+              {buttonText}
+            </Button>
+          </motion.div>
+        ))}
       </div>
     </section>
   );

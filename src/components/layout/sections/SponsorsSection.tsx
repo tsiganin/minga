@@ -6,6 +6,7 @@ import {
   Linkedin, 
   Figma 
 } from "lucide-react";
+import { motion } from "motion/react";
 
 interface SponsorProps {
   icon: any;
@@ -22,39 +23,32 @@ const sponsors: SponsorProps[] = [
 ];
 
 export const SponsorsSection = () => {
-  const items = [...sponsors, ...sponsors];
+  const items = [...sponsors, ...sponsors, ...sponsors];
 
   return (
-    <section id="sponsors" className="container pt-24 sm:pt-32">
-      <h2 className="text-center text-md lg:text-xl font-bold mb-8 text-primary">
-        Güçlü İş Ortaklarımız
-      </h2>
+    <section id="sponsors" className="py-24 overflow-hidden border-y border-slate-100 bg-slate-50/50">
+      <div className="container px-4 mx-auto mb-12">
+        <div className="flex flex-col items-center text-center">
+          <span className="text-blue-600 font-black uppercase tracking-[0.2em] text-[10px] mb-4">Ekosistemimiz</span>
+          <h2 className="text-2xl md:text-3xl font-display font-black text-slate-900">
+            Güçlü İş Ortaklarımız
+          </h2>
+        </div>
+      </div>
 
-      <div className="mx-auto overflow-hidden relative">
-        {/* Sol fade */}
-        <div className="absolute left-0 top-0 h-full w-24 z-10 pointer-events-none"
-          style={{ background: "linear-gradient(to right, hsl(var(--background)), transparent)" }}
-        />
-        {/* Sağ fade */}
-        <div className="absolute right-0 top-0 h-full w-24 z-10 pointer-events-none"
-          style={{ background: "linear-gradient(to left, hsl(var(--background)), transparent)" }}
-        />
+      <div className="relative group">
+        {/* Gradients for smooth fade */}
+        <div className="absolute left-0 top-0 h-full w-32 md:w-64 z-10 pointer-events-none bg-gradient-to-r from-slate-50/50 to-transparent" />
+        <div className="absolute right-0 top-0 h-full w-32 md:w-64 z-10 pointer-events-none bg-gradient-to-l from-slate-50/50 to-transparent" />
 
-        <div
-          className="flex gap-12 w-max"
-          style={{
-            animation: "marquee 20s linear infinite",
-          }}
-          onMouseEnter={e => (e.currentTarget.style.animationPlayState = "paused")}
-          onMouseLeave={e => (e.currentTarget.style.animationPlayState = "running")}
-        >
+        <div className="flex gap-16 md:gap-32 w-max animate-marquee hover:pause">
           {items.map(({ icon: Icon, name }, index) => (
             <div
               key={`${name}-${index}`}
-              className="flex items-center gap-1 text-muted-foreground/60"
+              className="flex items-center gap-4 text-slate-400 hover:text-blue-600 transition-colors duration-300 grayscale hover:grayscale-0"
             >
-              <Icon className="size-6 lg:size-10" />
-              <h3 className="text-xl lg:text-2xl font-bold">{name}</h3>
+              <Icon className="w-8 h-8 md:w-12 md:h-12" />
+              <span className="text-xl md:text-3xl font-display font-black tracking-tight">{name}</span>
             </div>
           ))}
         </div>
@@ -63,7 +57,13 @@ export const SponsorsSection = () => {
       <style>{`
         @keyframes marquee {
           0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
+          100% { transform: translateX(-33.33%); }
+        }
+        .animate-marquee {
+          animation: marquee 30s linear infinite;
+        }
+        .hover\\:pause:hover {
+          animation-play-state: paused;
         }
       `}</style>
     </section>
