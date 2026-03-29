@@ -422,7 +422,7 @@ function ProfilePage() {
             <div className="flex items-center gap-6">
               <div className="relative flex-shrink-0">
                 <div onClick={() => fileRef.current?.click()} className="w-24 h-24 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 overflow-hidden cursor-pointer hover:border-blue-400 transition flex items-center justify-center group">
-                  {profile.avatarBase64 ? <img src={profile.avatarBase64} alt="avatar" className="w-full h-full object-cover" crossOrigin="anonymous" referrerPolicy="no-referrer" /> : <span className="text-3xl">📷</span>}
+                  {profile.avatarBase64 ? <img src={profile.avatarBase64} alt="avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" /> : <span className="text-3xl">📷</span>}
                 </div>
                 <input ref={fileRef} type="file" accept="image/*" onChange={handleAvatar} className="hidden" />
               </div>
@@ -544,7 +544,7 @@ function HomePage() {
       <div key={gb.id} onClick={() => navigate(`/group-buys/${gb.id}`)} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all overflow-hidden group cursor-pointer">
         {firstImage && (
           <div className="aspect-video w-full overflow-hidden">
-            <img src={firstImage} alt={gb.productName} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" crossOrigin="anonymous" referrerPolicy="no-referrer" />
+            <img src={firstImage} alt={gb.productName} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" referrerPolicy="no-referrer" />
           </div>
         )}
         <div className="p-8">
@@ -756,7 +756,7 @@ function GroupBuyPage() {
                   }
                   return firstImage ? (
                     <div className="aspect-video w-full overflow-hidden">
-                      <img src={firstImage} alt={gb.productName} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" crossOrigin="anonymous" referrerPolicy="no-referrer" />
+                      <img src={firstImage} alt={gb.productName} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" referrerPolicy="no-referrer" />
                     </div>
                   ) : null;
                 })()}
@@ -932,7 +932,7 @@ function CreateGroupBuyPage() {
               <div className="grid grid-cols-4 gap-4 mb-4">
                 {images.map((img, idx) => (
                   <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border border-slate-100 group">
-                    <img src={img} alt={`preview-${idx}`} className="w-full h-full object-cover" crossOrigin="anonymous" referrerPolicy="no-referrer" />
+                    <img src={img} alt={`preview-${idx}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     <button 
                       type="button"
                       onClick={() => removeImage(idx)}
@@ -1151,7 +1151,7 @@ function GroupBuyDetailPage() {
             <div className="bg-white rounded-[3rem] overflow-hidden shadow-sm border border-slate-100">
               <div className="aspect-video bg-slate-100 relative group">
                 {gb.images && gb.images.length > 0 ? (
-                  <img src={gb.images[activeImage]} alt={gb.productName} className="w-full h-full object-cover" crossOrigin="anonymous" referrerPolicy="no-referrer" />
+                  <img src={gb.images[activeImage]} alt={gb.productName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-slate-300">
                     <Package className="w-20 h-20" />
@@ -1177,7 +1177,7 @@ function GroupBuyDetailPage() {
                       onClick={() => setActiveImage(idx)}
                       className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition ${activeImage === idx ? 'border-blue-500' : 'border-transparent'}`}
                     >
-                      <img src={img} alt={`thumb-${idx}`} className="w-full h-full object-cover" crossOrigin="anonymous" referrerPolicy="no-referrer" />
+                      <img src={img} alt={`thumb-${idx}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     </button>
                   ))}
                 </div>
@@ -1333,7 +1333,7 @@ function GroupBuyDetailPage() {
                   <div className="grid grid-cols-5 gap-3 mb-4">
                     {editingImages.map((img, idx) => (
                       <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-slate-100 group">
-                        <img src={img} alt={`preview-${idx}`} className="w-full h-full object-cover" crossOrigin="anonymous" referrerPolicy="no-referrer" />
+                        <img src={img} alt={`preview-${idx}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         <button 
                           type="button"
                           onClick={() => setEditingImages(prev => prev.filter((_, i) => i !== idx))}

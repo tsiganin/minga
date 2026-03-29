@@ -27,7 +27,7 @@ export const SponsorsSection = () => {
   return (
     <section id="sponsors" className="container pt-24 sm:pt-32">
       <h2 className="text-center text-md lg:text-xl font-bold mb-8 text-primary">
-        Our Platinum Sponsors
+        Güçlü İş Ortaklarımız
       </h2>
 
       <div className="mx-auto overflow-hidden relative">

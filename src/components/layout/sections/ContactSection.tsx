@@ -42,7 +42,7 @@ export const ContactSection = () => {
       firstName: "",
       lastName: "",
       email: "",
-      subject: "Web Development",
+      subject: "Genel Bilgi",
       message: "",
     },
   });
@@ -57,39 +57,37 @@ export const ContactSection = () => {
         <div>
           <div className="mb-4">
             <h2 className="text-lg text-primary mb-2 tracking-wider">
-              Contact
+              İletişim
             </h2>
 
             <h2 className="text-3xl md:text-4xl font-bold">
-              Connect With Us
+              Bizimle Bağlantı Kurun
             </h2>
           </div>
           <p className="mb-8 text-muted-foreground lg:w-5/6">
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptatem
-            fugiat, odit similique quasi sint reiciendis quidem iure veritatis
-            optio facere tenetur.
+            Sorularınız, önerileriniz veya iş birliği talepleriniz için bize her zaman ulaşabilirsiniz. Minga ekibi olarak size yardımcı olmaktan mutluluk duyarız.
           </p>
 
           <div className="flex flex-col gap-4">
             <div className="flex gap-2">
               <Building2 className="text-primary" />
-              <div>742 Evergreen Terrace, Springfield, IL 62704</div>
+              <div>Levent, Büyükdere Cd. No:123, 34394 Şişli/İstanbul</div>
             </div>
 
             <div className="flex gap-2">
               <Phone className="text-primary" />
-              <div>+1 (555) 123-4567</div>
+              <div>+90 (212) 123 45 67</div>
             </div>
 
             <div className="flex gap-2">
               <Mail className="text-primary" />
-              <div>leomirandadev@gmail.com</div>
+              <div>destek@minga.com</div>
             </div>
 
             <div className="flex gap-2">
               <Clock className="text-primary" />
               <div>
-                Monday - Friday: 9AM - 6PM
+                Pazartesi - Cuma: 09:00 - 18:00
               </div>
             </div>
           </div>
@@ -109,9 +107,9 @@ export const ContactSection = () => {
                     name="firstName"
                     render={({ field }) => (
                       <FormItem className="w-full">
-                        <FormLabel>First Name</FormLabel>
+                        <FormLabel>Adınız</FormLabel>
                         <FormControl>
-                          <Input placeholder="Leandro" {...field} />
+                          <Input placeholder="Ahmet" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -122,9 +120,9 @@ export const ContactSection = () => {
                     name="lastName"
                     render={({ field }) => (
                       <FormItem className="w-full">
-                        <FormLabel>Last Name</FormLabel>
+                        <FormLabel>Soyadınız</FormLabel>
                         <FormControl>
-                          <Input placeholder="Miranda" {...field} />
+                          <Input placeholder="Yılmaz" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -138,11 +136,11 @@ export const ContactSection = () => {
                     name="email"
                     render={({ field }) => (
                       <FormItem className="w-full">
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>E-posta</FormLabel>
                         <FormControl>
                           <Input
                             type="email"
-                            placeholder="leomirandadev@gmail.com"
+                            placeholder="ahmet@ornek.com"
                             {...field}
                           />
                         </FormControl>
@@ -156,29 +154,29 @@ export const ContactSection = () => {
                     name="subject"
                     render={({ field }) => (
                       <FormItem className="w-full">
-                        <FormLabel>Subject</FormLabel>
+                        <FormLabel>Konu</FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select a subject" />
+                              <SelectValue placeholder="Bir konu seçin" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="Web Development">
-                              Web Development
+                            <SelectItem value="Genel Bilgi">
+                              Genel Bilgi
                             </SelectItem>
-                            <SelectItem value="Mobile Development">
-                              Mobile Development
+                            <SelectItem value="Tedarikçi Başvurusu">
+                              Tedarikçi Başvurusu
                             </SelectItem>
-                            <SelectItem value="Figma Design">
-                              Figma Design
+                            <SelectItem value="Teknik Destek">
+                              Teknik Destek
                             </SelectItem>
-                            <SelectItem value="REST API">REST API</SelectItem>
-                            <SelectItem value="FullStack Project">
-                              FullStack Project
+                            <SelectItem value="İş Birliği">İş Birliği</SelectItem>
+                            <SelectItem value="Diğer">
+                              Diğer
                             </SelectItem>
                           </SelectContent>
                         </Select>
@@ -193,11 +191,11 @@ export const ContactSection = () => {
                   name="message"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Message</FormLabel>
+                      <FormLabel>Mesajınız</FormLabel>
                       <FormControl>
                         <Textarea
                           rows={5}
-                          placeholder="Your message..."
+                          placeholder="Mesajınızı buraya yazın..."
                           className="resize-none"
                           {...field}
                         />
@@ -207,7 +205,7 @@ export const ContactSection = () => {
                   )}
                 />
 
-                <Button className="mt-4">Send message</Button>
+                <Button className="mt-4">Mesaj Gönder</Button>
               </form>
             </Form>
           </CardContent>

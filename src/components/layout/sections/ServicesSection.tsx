@@ -19,27 +19,27 @@ interface ServiceProps {
 
 const serviceList: ServiceProps[] = [
   {
-    title: "Code Optimization",
+    title: "Toplu Alım Yönetimi",
     description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Amet unde eveniet.",
+      "Birden fazla alıcıyı bir araya getirerek ölçek ekonomisinden yararlanmanızı ve en iyi fiyatları almanızı sağlıyoruz.",
     pro: ProService.NO,
   },
   {
-    title: "Social Media Integrations",
+    title: "Tedarikçi Doğrulama",
     description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Amet unde eveniet.",
+      "Tüm tedarikçilerimiz sıkı bir denetim sürecinden geçer, böylece güvenli ve kaliteli ürünlere ulaşırsınız.",
     pro: ProService.YES,
   },
   {
-    title: "Custom Domain",
+    title: "Lojistik Desteği",
     description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Amet unde eveniet.",
+      "Ürünlerin kapınıza kadar güvenle ve en uygun maliyetle ulaşması için lojistik süreçlerini biz yönetiyoruz.",
     pro: ProService.NO,
   },
   {
-    title: "Cloud Storage",
+    title: "Güvenli Ödeme Sistemi",
     description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Amet unde eveniet.",
+      "Ödemeleriniz Minga güvencesi altındadır. Ürün teslim edilene kadar paranız güvenle saklanır.",
     pro: ProService.YES,
   },
 ];
@@ -48,16 +48,15 @@ export const ServicesSection = () => {
   return (
     <section id="services" className="container py-24 sm:py-32">
       <h2 className="text-lg text-primary text-center mb-2 tracking-wider">
-        Services
+        Hizmetlerimiz
       </h2>
 
       <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
-        Grow Your Business
+        İşinizi Birlikte Büyütelim
       </h2>
 
       <h3 className="md:w-1/2 mx-auto text-xl text-center text-muted-foreground mb-8">
-        From strategy to implementation, we are here to help you achieve your
-        goals.
+        Stratejiden uygulamaya kadar, hedeflerinize ulaşmanız için yanınızdayız.
       </h3>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>

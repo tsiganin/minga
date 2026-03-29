@@ -22,46 +22,10 @@ interface SocialNetworkProps {
 
 const teamList: TeamProps[] = [
   {
-    imageUrl: "https://i.pravatar.cc/150?u=john_team",
-    firstName: "John",
-    lastName: "Doe",
-    positions: ["Frontend Developer", "UI Designer"],
-    socialNetworks: [
-      {
-        name: "Linkedin",
-        url: "https://www.linkedin.com/",
-      },
-      {
-        name: "Github",
-        url: "https://github.com/",
-      },
-      {
-        name: "Twitter",
-        url: "https://twitter.com/",
-      },
-    ],
-  },
-  {
-    imageUrl: "https://i.pravatar.cc/150?u=jane_team",
-    firstName: "Jane",
-    lastName: "Doe",
-    positions: ["Backend Developer", "DevOps Engineer"],
-    socialNetworks: [
-      {
-        name: "Linkedin",
-        url: "https://www.linkedin.com/",
-      },
-      {
-        name: "Github",
-        url: "https://github.com/",
-      },
-    ],
-  },
-  {
-    imageUrl: "https://i.pravatar.cc/150?u=alex_team",
-    firstName: "Alex",
-    lastName: "Smith",
-    positions: ["Fullstack Developer", "Project Manager"],
+    imageUrl: "https://i.pravatar.cc/150?u=ozer_team",
+    firstName: "Özer",
+    lastName: "Başer",
+    positions: ["Kurucu", "Ürün Yöneticisi"],
     socialNetworks: [
       {
         name: "Linkedin",
@@ -74,10 +38,22 @@ const teamList: TeamProps[] = [
     ],
   },
   {
-    imageUrl: "https://i.pravatar.cc/150?u=caleb_team",
-    firstName: "Caleb",
-    lastName: "Williams",
-    positions: ["Mobile Developer", "QA Engineer"],
+    imageUrl: "https://i.pravatar.cc/150?u=ayse_team",
+    firstName: "Ayşe",
+    lastName: "Yılmaz",
+    positions: ["Operasyon Direktörü", "Tedarik Zinciri Uzmanı"],
+    socialNetworks: [
+      {
+        name: "Linkedin",
+        url: "https://www.linkedin.com/",
+      },
+    ],
+  },
+  {
+    imageUrl: "https://i.pravatar.cc/150?u=mehmet_team",
+    firstName: "Mehmet",
+    lastName: "Demir",
+    positions: ["Teknoloji Lideri", "Yazılım Mimarı"],
     socialNetworks: [
       {
         name: "Linkedin",
@@ -86,6 +62,22 @@ const teamList: TeamProps[] = [
       {
         name: "Github",
         url: "https://github.com/",
+      },
+    ],
+  },
+  {
+    imageUrl: "https://i.pravatar.cc/150?u=selin_team",
+    firstName: "Selin",
+    lastName: "Kaya",
+    positions: ["Pazarlama Müdürü", "Topluluk Yöneticisi"],
+    socialNetworks: [
+      {
+        name: "Linkedin",
+        url: "https://www.linkedin.com/",
+      },
+      {
+        name: "Twitter",
+        url: "https://twitter.com/",
       },
     ],
   },
@@ -107,11 +99,11 @@ export const TeamSection = () => {
     <section id="team" className="container py-24 sm:py-32">
       <div className="text-center mb-8">
         <h2 className="text-lg text-primary text-center mb-2 tracking-wider">
-          Team
+          Ekibimiz
         </h2>
 
         <h2 className="text-3xl md:text-4xl font-bold mb-4">
-          Meet Our Experts
+          Uzmanlarımızla Tanışın
         </h2>
       </div>
 
@@ -129,7 +121,6 @@ export const TeamSection = () => {
                     alt=""
                     className="w-full aspect-square object-cover transition-all duration-200 group-hover/hover:scale-105"
                     referrerPolicy="no-referrer"
-                    crossOrigin="anonymous"
                   />
                 </div>
                 <CardTitle className="py-6 pb-4 px-6">

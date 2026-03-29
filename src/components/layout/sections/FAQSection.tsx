@@ -13,32 +13,32 @@ interface FAQProps {
 
 const FAQList: FAQProps[] = [
   {
-    question: "Is this template free?",
-    answer: "Yes, this template is free for personal and commercial use.",
+    question: "Minga nedir?",
+    answer: "Minga, alıcıları bir araya getirerek toplu alım gücü oluşturan ve bu sayede en iyi fiyatlara ulaşmanızı sağlayan bir platformdur.",
     value: "item-1",
   },
   {
-    question: "Duis aute irure dolor in reprehenderit in voluptate velit?",
+    question: "Nasıl toplu alım yaparım?",
     answer:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      "Platformdaki aktif ilanları inceleyin, ihtiyacınıza uygun olanı seçin ve 'Katıl' butonuna basarak istediğiniz miktarı belirtin. Hedef miktara ulaşıldığında alım gerçekleşir.",
     value: "item-2",
   },
   {
-    question: "Ut enim ad minim veniam, quis nostrud exercitation ullamco?",
+    question: "Tedarikçiler güvenilir mi?",
     answer:
-      "Enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+      "Evet, Minga üzerindeki tüm tedarikçiler sıkı bir doğrulama sürecinden geçer. Ayrıca kullanıcı yorumları ve puanlamaları ile şeffaf bir sistem sunuyoruz.",
     value: "item-3",
   },
   {
-    question: "Laboris nisi ut aliquip ex ea commodo consequat?",
+    question: "Ödeme süreci nasıl işler?",
     answer:
-      "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+      "Ödemeniz Minga güvencesi altındadır. Ürün size teslim edilene ve onaylayana kadar ödemeniz tedarikçiye aktarılmaz.",
     value: "item-4",
   },
   {
-    question: "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua?",
+    question: "İptal ve iade koşulları nelerdir?",
     answer:
-      "Laboris nisi ut aliquip ex ea commodo consequat. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+      "İlan süresi dolmadan katılımınızı iptal edebilirsiniz. Ürün teslimatından sonraki iade süreçleri ise Minga'nın koruma politikası ve satıcı sözleşmesi çerçevesinde yönetilir.",
     value: "item-5",
   },
 ];
@@ -48,11 +48,11 @@ export const FAQSection = () => {
     <section id="faq" className="container md:w-[700px] py-24 sm:py-32">
       <div className="text-center mb-8">
         <h2 className="text-lg text-primary text-center mb-2 tracking-wider">
-          FAQS
+          S.S.S
         </h2>
 
         <h2 className="text-3xl md:text-4xl font-bold text-center">
-          Common Questions
+          Sıkça Sorulan Sorular
         </h2>
       </div>
 

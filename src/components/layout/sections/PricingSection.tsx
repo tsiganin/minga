@@ -26,48 +26,48 @@ interface PricingProps {
 
 const pricingList: PricingProps[] = [
   {
-    title: "Free",
+    title: "Alıcı",
     popular: PopularPlanType.NO,
     price: 0,
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Reprehenderit nihil.",
-    buttonText: "Get Started",
+      "Bireysel alıcılar ve küçük işletmeler için tamamen ücretsiz.",
+    buttonText: "Hemen Başla",
     benefitList: [
-      "1 Team member",
-      "2 GB Storage",
-      "Upto 4 pages",
-      "Community support",
-      "lorem ipsum dolor",
+      "Sınırsız ilana katılım",
+      "Güvenli ödeme sistemi",
+      "Tedarikçi puanlama",
+      "Topluluk desteği",
+      "Lojistik takibi",
     ],
   },
   {
-    title: "Premium",
+    title: "Tedarikçi",
     popular: PopularPlanType.YES,
-    price: 45,
+    price: 499,
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Reprehenderit nihil.",
-    buttonText: "Start Free Trial",
+      "Ürünlerini binlerce alıcıya ulaştırmak isteyen tedarikçiler için.",
+    buttonText: "Tedarikçi Ol",
     benefitList: [
-      "4 Team member",
-      "4 GB Storage",
-      "Upto 6 pages",
-      "Priority support",
-      "lorem ipsum dolor",
+      "Sınırsız ilan oluşturma",
+      "Doğrulanmış rozeti",
+      "Öncelikli listeleme",
+      "Detaylı satış analiti",
+      "7/24 Destek",
     ],
   },
   {
-    title: "Enterprise",
+    title: "Kurumsal",
     popular: PopularPlanType.NO,
-    price: 120,
+    price: 1499,
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Reprehenderit nihil.",
-    buttonText: "Contact Us",
+      "Büyük ölçekli operasyonlar ve özel entegrasyonlar için.",
+    buttonText: "Bize Ulaşın",
     benefitList: [
-      "10 Team member",
-      "8 GB Storage",
-      "Upto 10 pages",
-      "Priority support",
-      "lorem ipsum dolor",
+      "Özel API erişimi",
+      "Kurumsal hesap yönetimi",
+      "Özel lojistik çözümleri",
+      "Gelişmiş raporlama",
+      "SLA garantisi",
     ],
   },
 ];
@@ -76,17 +76,15 @@ export const PricingSection = () => {
   return (
     <section id="pricing" className="container py-24 sm:py-32">
       <h2 className="text-lg text-primary text-center mb-2 tracking-wider">
-        Pricing
+        Fiyatlandırma
       </h2>
 
       <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
-        Get Unlimted Access
+        Size Uygun Planı Seçin
       </h2>
 
       <h3 className="md:w-1/2 mx-auto text-xl text-center text-muted-foreground mb-8">
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptatem
-        fugiat, odit similique quasi sint reiciendis quidem iure veritatis optio
-        facere tenetur.
+        Minga'da her bütçeye ve ihtiyaca uygun bir çözüm var. Hemen katılın ve toplu alım gücünden yararlanın.
       </h3>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">

@@ -23,51 +23,51 @@ interface TestimonialProps {
 
 const testimonials: TestimonialProps[] = [
   {
-    image: "https://i.pravatar.cc/150?u=john",
-    name: "John Doe",
-    userName: "@john_doe",
+    image: "https://i.pravatar.cc/150?u=ayse",
+    name: "Ayşe Yılmaz",
+    userName: "@ayse_tekstil",
     comment:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      "Minga sayesinde kumaş alımlarımızda %20 tasarruf sağladık. Küçük bir işletme olarak büyüklerin fiyatlarına ulaşabilmek harika.",
     rating: 5.0,
   },
   {
-    image: "https://i.pravatar.cc/150?u=jane",
-    name: "Jane Doe",
-    userName: "@jane_doe",
+    image: "https://i.pravatar.cc/150?u=mehmet",
+    name: "Mehmet Demir",
+    userName: "@mehmet_elektronik",
     comment:
-      "Lorem ipsum dolor sit amet,consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+      "Tedarikçi bulma ve güvenli ödeme süreçleri çok şeffaf. Minga ile işimizi büyütmek çok daha kolaylaştı.",
     rating: 4.8,
   },
   {
-    image: "https://i.pravatar.cc/150?u=alex",
-    name: "Alex Smith",
-    userName: "@alex_smith",
+    image: "https://i.pravatar.cc/150?u=can",
+    name: "Can Özkan",
+    userName: "@can_gida",
     comment:
-      "Lorem ipsum dolor sit amet,consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+      "Toplu alım gücü gerçekten işe yarıyor. Minga ekibi her adımda destek oluyor, lojistik süreçleri çok başarılı.",
     rating: 4.9,
   },
   {
-    image: "https://i.pravatar.cc/150?u=caleb",
-    name: "Caleb Williams",
-    userName: "@caleb_williams",
+    image: "https://i.pravatar.cc/150?u=zeynep",
+    name: "Zeynep Aksoy",
+    userName: "@zeynep_mobilya",
     comment:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+      "Platformun kullanımı çok kolay. İlanları takip etmek ve katılmak saniyeler sürüyor. Kesinlikle tavsiye ederim.",
     rating: 5.0,
   },
   {
-    image: "https://i.pravatar.cc/150?u=winona",
-    name: "Winona Ryder",
-    userName: "@winona_ryder",
+    image: "https://i.pravatar.cc/150?u=ali",
+    name: "Ali Kaya",
+    userName: "@ali_insaat",
     comment:
-      "Lorem ipsum dolor sit amet,consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+      "İnşaat malzemeleri alımında Minga'yı kullanıyoruz. Hem fiyat avantajı hem de kaliteli tedarikçilerle çalışmak büyük artı.",
     rating: 4.8,
   },
   {
-    image: "https://i.pravatar.cc/150?u=paris",
-    name: "Paris Hilton",
-    userName: "@paris_hilton",
+    image: "https://i.pravatar.cc/150?u=fatma",
+    name: "Fatma Şahin",
+    userName: "@fatma_medikal",
     comment:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      "Medikal sektöründe güven çok önemli. Minga'nın tedarikçi doğrulama süreci bize bu güveni fazlasıyla veriyor.",
     rating: 4.7,
   },
 ];
@@ -77,11 +77,11 @@ export const TestimonialSection = () => {
     <section id="testimonials" className="container py-24 sm:py-32">
       <div className="text-center mb-8">
         <h2 className="text-lg text-primary text-center mb-2 tracking-wider">
-          Testimonials
+          Referanslarımız
         </h2>
 
         <h2 className="text-3xl md:text-4xl font-bold mb-4">
-          Hear What Our Customers Say
+          Kullanıcılarımız Ne Diyor?
         </h2>
       </div>
 
@@ -97,7 +97,6 @@ export const TestimonialSection = () => {
                   alt="user avatar"
                   src={image}
                   referrerPolicy="no-referrer"
-                  crossOrigin="anonymous"
                 />
                 <AvatarFallback>SV</AvatarFallback>
               </AvatarRoot>

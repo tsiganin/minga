@@ -9,21 +9,22 @@ export const FooterSection = () => {
             <a
               rel="noreferrer noopener"
               href="/"
-              className="font-bold text-xl flex"
+              className="font-bold text-2xl flex items-center"
             >
-              Logo
+              <span className="bg-primary text-white px-2 py-1 rounded-lg mr-2">M</span>
+              Minga
             </a>
           </div>
 
           <div className="flex flex-col gap-2">
-            <h3 className="font-bold text-lg">Contact</h3>
+            <h3 className="font-bold text-lg">İletişim</h3>
             <div>
               <a
                 rel="noreferrer noopener"
                 href="#"
                 className="opacity-60 hover:opacity-100"
               >
-                Github
+                E-posta
               </a>
             </div>
 
@@ -33,7 +34,7 @@ export const FooterSection = () => {
                 href="#"
                 className="opacity-60 hover:opacity-100"
               >
-                Twitter
+                Telefon
               </a>
             </div>
 
@@ -43,13 +44,13 @@ export const FooterSection = () => {
                 href="#"
                 className="opacity-60 hover:opacity-100"
               >
-                Discord
+                Adres
               </a>
             </div>
           </div>
 
           <div className="flex flex-col gap-2">
-            <h3 className="font-bold text-lg">Platforms</h3>
+            <h3 className="font-bold text-lg">Platform</h3>
             <div>
               <a
                 rel="noreferrer noopener"
@@ -66,7 +67,7 @@ export const FooterSection = () => {
                 href="#"
                 className="opacity-60 hover:opacity-100"
               >
-                Mobile
+                Mobil
               </a>
             </div>
 
@@ -76,53 +77,30 @@ export const FooterSection = () => {
                 href="#"
                 className="opacity-60 hover:opacity-100"
               >
-                Desktop
-              </a>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <h3 className="font-bold text-lg">Help</h3>
-            <div>
-              <a
-                rel="noreferrer noopener"
-                href="#"
-                className="opacity-60 hover:opacity-100"
-              >
-                Contact Us
-              </a>
-            </div>
-
-            <div>
-              <a
-                rel="noreferrer noopener"
-                href="#"
-                className="opacity-60 hover:opacity-100"
-              >
-                FAQ
-              </a>
-            </div>
-
-            <div>
-              <a
-                rel="noreferrer noopener"
-                href="#"
-                className="opacity-60 hover:opacity-100"
-              >
-                Feedback
+                Masaüstü
               </a>
             </div>
           </div>
 
           <div className="flex flex-col gap-2">
-            <h3 className="font-bold text-lg">Socials</h3>
+            <h3 className="font-bold text-lg">Yardım</h3>
             <div>
               <a
                 rel="noreferrer noopener"
-                href="#"
+                href="#contact"
                 className="opacity-60 hover:opacity-100"
               >
-                Twitch
+                Bize Ulaşın
+              </a>
+            </div>
+
+            <div>
+              <a
+                rel="noreferrer noopener"
+                href="#faq"
+                className="opacity-60 hover:opacity-100"
+              >
+                S.S.S
               </a>
             </div>
 
@@ -132,7 +110,20 @@ export const FooterSection = () => {
                 href="#"
                 className="opacity-60 hover:opacity-100"
               >
-                Discord
+                Geri Bildirim
+              </a>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <h3 className="font-bold text-lg">Sosyal Medya</h3>
+            <div>
+              <a
+                rel="noreferrer noopener"
+                href="#"
+                className="opacity-60 hover:opacity-100"
+              >
+                Twitter
               </a>
             </div>
 
@@ -142,7 +133,17 @@ export const FooterSection = () => {
                 href="#"
                 className="opacity-60 hover:opacity-100"
               >
-                Dribbble
+                Instagram
+              </a>
+            </div>
+
+            <div>
+              <a
+                rel="noreferrer noopener"
+                href="#"
+                className="opacity-60 hover:opacity-100"
+              >
+                LinkedIn
               </a>
             </div>
           </div>
@@ -151,14 +152,7 @@ export const FooterSection = () => {
         <Separator className="my-6" />
         <section className="">
           <h3 className="">
-            &copy; 2024 Designed and developed by
-            <a
-              target="_blank"
-              href="https://github.com/leoMirandaa"
-              className="text-primary transition-all border-primary hover:border-b-2 ml-1"
-            >
-              Leo Miranda
-            </a>
+            &copy; 2024 Minga. Tüm hakları saklıdır.
           </h3>
         </section>
       </div>

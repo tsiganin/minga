@@ -58,7 +58,6 @@ export const HeroSection = () => {
             src="https://images.unsplash.com/photo-1557821552-17105176677c?q=80&w=1600&auto=format&fit=crop"
             alt="dashboard"
             referrerPolicy="no-referrer"
-            crossOrigin="anonymous"
           />
 
           <div className="absolute bottom-0 left-0 w-full h-20 md:h-28 bg-gradient-to-b from-transparent to-background rounded-lg"></div>
