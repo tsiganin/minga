@@ -5,8 +5,15 @@ import { ChevronDown, Package, TrendingUp, Clock, LayoutGrid, Search, Users, Shi
 import * as XLSX from 'xlsx';
 
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
-import { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, increment, runTransaction, writeBatch } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, increment, runTransaction, writeBatch, limit } from 'firebase/firestore';
 import { auth, db } from './firebase';
+
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
+  LineChart, Line, PieChart, Pie, Cell, AreaChart, Area 
+} from 'recharts';
+import { format, subDays, startOfDay, endOfDay, eachDayOfInterval } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 import { Navbar } from "@/src/components/layout/Navbar";
 import { HeroSection } from "@/src/components/layout/sections/HeroSection";
@@ -99,10 +106,13 @@ function LoginPage() {
         // This shouldn't happen with new users, but for existing ones during migration
         await setDoc(doc(db, 'users', firebaseUser.uid), {
           email: firebaseUser.email,
-          role: 'buyer',
+          role: firebaseUser.email === 'ozerbaser@gmail.com' ? 'admin' : 'buyer',
           points: 0,
           createdAt: serverTimestamp(),
         });
+      } else if (firebaseUser.email === 'ozerbaser@gmail.com' && userDoc.data()?.role !== 'admin') {
+        // Force admin role for this specific user if it's not set
+        await updateDoc(doc(db, 'users', firebaseUser.uid), { role: 'admin' });
       }
       
       navigate('/');
@@ -1972,12 +1982,50 @@ function AdminDashboard() {
         const usersSnap = await getDocs(collection(db, 'users'));
         const gbsSnap = await getDocs(collection(db, 'groupBuys'));
         const ordersSnap = await getDocs(collection(db, 'orders'));
+        const catsSnap = await getDocs(collection(db, 'categories'));
         
+        const usersData = usersSnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
+        const gbsData = gbsSnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
+        const ordersData = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
+        const catsData = catsSnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
+
+        // Process data for charts (last 14 days)
+        const last14Days = eachDayOfInterval({
+          start: subDays(new Date(), 13),
+          end: new Date()
+        });
+
+        const dailyStats = last14Days.map(date => {
+          const dateStr = format(date, 'yyyy-MM-dd');
+          const dayUsers = usersData.filter(u => {
+            const createdAt = u.createdAt?.toDate ? u.createdAt.toDate() : (u.createdAt ? new Date(u.createdAt) : null);
+            return createdAt && format(createdAt, 'yyyy-MM-dd') === dateStr;
+          }).length;
+
+          const dayOrders = ordersData.filter(o => {
+            const createdAt = o.createdAt?.toDate ? o.createdAt.toDate() : (o.createdAt ? new Date(o.createdAt) : null);
+            return createdAt && format(createdAt, 'yyyy-MM-dd') === dateStr;
+          }).length;
+
+          return {
+            date: format(date, 'd MMM', { locale: tr }),
+            users: dayUsers,
+            orders: dayOrders
+          };
+        });
+
+        const gbByCategory = catsData.map(cat => {
+          const count = gbsData.filter(gb => gb.category === cat.name || gb.category === cat.id).length;
+          return { name: cat.name, value: count };
+        }).filter(c => c.value > 0);
+
         setStats({
           totalUsers: usersSnap.size,
           totalGroupBuys: gbsSnap.size,
           activeGroupBuys: gbsSnap.docs.filter(d => d.data().status === 'active').length,
           totalOrders: ordersSnap.size,
+          dailyStats,
+          gbByCategory
         });
       } else if (activeTab === 'users') {
         const snapshot = await getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc')));
@@ -2083,7 +2131,7 @@ function AdminDashboard() {
 
         <nav className="flex-1 space-y-2">
           {[
-            { id: 'overview', label: 'Genel Bakış', icon: BarChart3 },
+            { id: 'overview', label: 'Dashboard', icon: BarChart3 },
             { id: 'users', label: 'Kullanıcılar', icon: Users },
             { id: 'group-buys', label: 'İlanlar', icon: Package },
             { id: 'categories', label: 'Kategori Yönetimi', icon: List },
@@ -2115,7 +2163,7 @@ function AdminDashboard() {
         <header className="mb-10 flex justify-between items-end">
           <div>
             <h1 className="text-3xl font-black text-slate-900">
-              {activeTab === 'overview' ? 'Genel Bakış' : 
+              {activeTab === 'overview' ? 'Dashboard' : 
                activeTab === 'users' ? 'Kullanıcı Yönetimi' : 
                activeTab === 'categories' ? 'Kategori Yönetimi' :
                'İlan Yönetimi'}
@@ -2132,25 +2180,86 @@ function AdminDashboard() {
         ) : (
           <>
             {activeTab === 'overview' && stats && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[
-                  { label: 'Toplam Kullanıcı', value: stats.totalUsers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-100', tab: 'users' },
-                  { label: 'Toplam İlan', value: stats.totalGroupBuys, icon: Package, color: 'text-indigo-600', bg: 'bg-indigo-100', tab: 'group-buys' },
-                  { label: 'Aktif İlanlar', value: stats.activeGroupBuys, icon: Activity, color: 'text-emerald-600', bg: 'bg-emerald-100', tab: 'group-buys' },
-                  { label: 'Toplam Sipariş', value: stats.totalOrders, icon: Shield, color: 'text-rose-600', bg: 'bg-rose-100', tab: 'overview' },
-                ].map((stat, i) => (
-                  <div 
-                    key={i} 
-                    onClick={() => stat.tab !== 'overview' && setActiveTab(stat.tab)}
-                    className={`bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm transition-all duration-300 ${stat.tab !== 'overview' ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-blue-200' : ''}`}
-                  >
-                    <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center mb-4`}>
-                      <stat.icon className="w-6 h-6" />
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[
+                    { label: 'Toplam Kullanıcı', value: stats.totalUsers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-100', tab: 'users' },
+                    { label: 'Toplam İlan', value: stats.totalGroupBuys, icon: Package, color: 'text-indigo-600', bg: 'bg-indigo-100', tab: 'group-buys' },
+                    { label: 'Aktif İlanlar', value: stats.activeGroupBuys, icon: Activity, color: 'text-emerald-600', bg: 'bg-emerald-100', tab: 'group-buys' },
+                    { label: 'Toplam Sipariş', value: stats.totalOrders, icon: Shield, color: 'text-rose-600', bg: 'bg-rose-100', tab: 'overview' },
+                  ].map((stat, i) => (
+                    <div 
+                      key={i} 
+                      onClick={() => stat.tab !== 'overview' && setActiveTab(stat.tab)}
+                      className={`bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm transition-all duration-300 ${stat.tab !== 'overview' ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-blue-200' : ''}`}
+                    >
+                      <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center mb-4`}>
+                        <stat.icon className="w-6 h-6" />
+                      </div>
+                      <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
+                      <p className="text-3xl font-black text-slate-900">{stat.value}</p>
                     </div>
-                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-                    <p className="text-3xl font-black text-slate-900">{stat.value}</p>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Daily Activity Chart */}
+                  <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+                    <h3 className="text-xl font-black text-slate-900 mb-6">Günlük Aktivite (Son 14 Gün)</h3>
+                    <div className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={stats.dailyStats}>
+                          <defs>
+                            <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                              <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                            </linearGradient>
+                            <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
+                              <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                          <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
+                          <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
+                          <Tooltip 
+                            contentStyle={{borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
+                          />
+                          <Area type="monotone" dataKey="users" name="Yeni Kullanıcı" stroke="#3b82f6" fillOpacity={1} fill="url(#colorUsers)" strokeWidth={3} />
+                          <Area type="monotone" dataKey="orders" name="Yeni Sipariş" stroke="#10b981" fillOpacity={1} fill="url(#colorOrders)" strokeWidth={3} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
-                ))}
+
+                  {/* Categories Distribution */}
+                  <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+                    <h3 className="text-xl font-black text-slate-900 mb-6">Kategori Dağılımı</h3>
+                    <div className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={stats.gbByCategory}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={100}
+                            paddingAngle={5}
+                            dataKey="value"
+                          >
+                            {stats.gbByCategory.map((entry: any, index: number) => (
+                              <Cell key={`cell-${index}`} fill={['#3b82f6', '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b'][index % 6]} />
+                            ))}
+                          </Pie>
+                          <Tooltip 
+                            contentStyle={{borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
+                          />
+                          <Legend verticalAlign="bottom" height={36}/>
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
