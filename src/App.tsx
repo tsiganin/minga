@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate, useLocation, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, Package, TrendingUp, Clock, LayoutGrid, Search, Users, Shield, Activity, Trash2, CheckCircle, XCircle, BarChart3, Mail, Edit, Upload, FileSpreadsheet, List, ArrowLeft, Eye, EyeOff, ArrowRight, Plus, Bell, LogOut, Settings, User as UserIcon, Coins } from 'lucide-react';
+import { ChevronDown, Package, TrendingUp, Clock, LayoutGrid, Search, Users, Shield, Activity, Trash2, CheckCircle, XCircle, BarChart3, Mail, Edit, Upload, FileSpreadsheet, List, ArrowLeft, Eye, EyeOff, ArrowRight, Plus, Bell, LogOut, Settings, User as UserIcon, Coins, RefreshCw, PlusCircle, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
@@ -2158,6 +2158,7 @@ function AdminDashboard() {
   const [editingGroupBuy, setEditingGroupBuy] = useState<any>(null);
   const [editingImages, setEditingImages] = useState<string[]>([]);
   const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [messagingUser, setMessagingUser] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const navigate = useNavigate();
@@ -2183,6 +2184,22 @@ function AdminDashboard() {
     });
     return () => unsubscribe();
   }, [activeTab, navigate]);
+
+  const exportUsers = () => {
+    const data = users.map(u => ({
+      'Email': u.email,
+      'Ad Soyad': u.fullName || u.companyName || '-',
+      'Rol': u.role,
+      'Telefon': u.phone || '-',
+      'Puan': u.points || 0,
+      'Durum': u.isActive ? 'Aktif' : 'Pasif',
+      'Kayıt Tarihi': u.createdAt?.toDate ? u.createdAt.toDate().toLocaleDateString('tr-TR') : '-'
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Kullanıcılar");
+    XLSX.writeFile(workbook, "kullanicilar_listesi.xlsx");
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -2410,9 +2427,15 @@ function AdminDashboard() {
             </h1>
             <p className="text-slate-500 font-medium">Sistemdeki tüm verileri buradan kontrol edebilirsiniz.</p>
           </div>
-          <button onClick={fetchData} className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition">
-            <Activity className="w-5 h-5 text-slate-600" />
-          </button>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={fetchData} 
+              className={`p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition shadow-sm ${loading ? 'animate-pulse' : ''}`}
+              title="Verileri Yenile"
+            >
+              <RefreshCw className={`w-5 h-5 text-slate-600 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </header>
 
         {loading ? (
@@ -2562,7 +2585,22 @@ function AdminDashboard() {
             )}
 
             {activeTab === 'users' && (
-              <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+              <div className="space-y-6">
+                <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-black text-slate-900">Kullanıcı Listesi</h3>
+                    <p className="text-sm text-slate-500 font-medium">Sistemdeki tüm kayıtlı kullanıcıları yönetin.</p>
+                  </div>
+                  <button 
+                    onClick={exportUsers}
+                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-200"
+                  >
+                    <Download className="w-5 h-5" />
+                    Excel İndir
+                  </button>
+                </div>
+
+                <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-100">
@@ -2642,7 +2680,8 @@ function AdminDashboard() {
                   </tbody>
                 </table>
               </div>
-            )}
+            </div>
+          )}
 
             {activeTab === 'group-buys' && (
               <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
@@ -2728,6 +2767,13 @@ function AdminDashboard() {
                       <p className="text-sm text-slate-500 font-medium">Excel ile toplu yükleme yapabilir veya ilanlardaki kategorileri senkronize edebilirsiniz.</p>
                     </div>
                     <div className="flex gap-3">
+                      <button 
+                        onClick={() => setIsAddingCategory(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl font-black text-sm hover:bg-emerald-700 transition shadow-lg shadow-emerald-200"
+                      >
+                        <PlusCircle className="w-5 h-5" />
+                        Yeni Kategori
+                      </button>
                       <button 
                         onClick={fetchData}
                         className="flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm hover:bg-slate-200 transition"
@@ -3065,6 +3111,67 @@ function AdminDashboard() {
 
                   <button type="submit" className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-700 transition shadow-xl shadow-blue-200">
                     Gönder
+                  </button>
+                </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {isAddingCategory && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-[3rem] w-full max-w-lg overflow-hidden shadow-2xl"
+            >
+              <div className="p-10">
+                <div className="flex justify-between items-start mb-8">
+                  <div>
+                    <h2 className="text-2xl font-black text-slate-900">Yeni Kategori Ekle</h2>
+                    <p className="text-slate-500 font-medium">Sisteme yeni bir ürün kategorisi tanımlayın.</p>
+                  </div>
+                  <button onClick={() => setIsAddingCategory(false)} className="p-2 hover:bg-slate-100 rounded-full transition">
+                    <XCircle className="w-6 h-6 text-slate-400" />
+                  </button>
+                </div>
+
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  const payload = {
+                    name: formData.get('name'),
+                    description: formData.get('description'),
+                    icon: formData.get('icon') || 'Package',
+                    createdAt: serverTimestamp(),
+                  };
+                  try {
+                    await addDoc(collection(db, 'categories'), payload);
+                    alert('Kategori başarıyla eklendi!');
+                    setIsAddingCategory(false);
+                    fetchData();
+                  } catch (err: any) {
+                    console.error(err);
+                    alert('Hata: ' + err.message);
+                  }
+                }} className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Kategori Adı</label>
+                    <input name="name" required className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" placeholder="Örn: Elektronik" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Açıklama</label>
+                    <textarea name="description" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500 h-24 resize-none" placeholder="Kategori hakkında kısa bilgi..." />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">İkon (Lucide Adı)</label>
+                    <input name="icon" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-500" placeholder="Örn: Package, ShoppingCart, Laptop" />
+                  </div>
+
+                  <button type="submit" className="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-emerald-700 transition shadow-xl shadow-emerald-200">
+                    Kategoriyi Oluştur
                   </button>
                 </form>
               </div>

@@ -10,10 +10,13 @@
         "fullName": { "type": "string" },
         "companyName": { "type": "string" },
         "phone": { "type": "string" },
-        "role": { "type": "string", "enum": ["user", "admin"] },
+        "role": { "type": "string", "enum": ["buyer", "supplier", "admin"] },
         "points": { "type": "number" },
         "referralCode": { "type": "string" },
         "referredBy": { "type": "string" },
+        "sector": { "type": "string" },
+        "address": { "type": "string" },
+        "isActive": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "email", "role"]
@@ -24,8 +27,7 @@
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "sellerId": { "type": "string" },
-        "sellerName": { "type": "string" },
+        "creatorId": { "type": "string" },
         "productName": { "type": "string" },
         "category": { "type": "string" },
         "description": { "type": "string" },
@@ -33,12 +35,13 @@
         "unitPrice": { "type": "number" },
         "targetQuantity": { "type": "number" },
         "currentQuantity": { "type": "number" },
-        "images": { "type": "array", "items": { "type": "string" } },
+        "targetPrice": { "type": "number" },
+        "imagesBase64": { "type": "string" },
         "status": { "type": "string", "enum": ["active", "completed", "cancelled"] },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "expiresAt": { "type": "string", "format": "date-time" }
+        "deadline": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["productName", "category", "unitPrice", "targetQuantity", "sellerId"]
+      "required": ["productName", "category", "unitPrice", "targetQuantity", "creatorId"]
     },
     "Order": {
       "title": "Order",
@@ -48,11 +51,10 @@
         "id": { "type": "string" },
         "groupBuyId": { "type": "string" },
         "userId": { "type": "string" },
-        "userName": { "type": "string" },
         "quantity": { "type": "number" },
-        "totalPrice": { "type": "number" },
         "status": { "type": "string", "enum": ["pending", "confirmed", "cancelled"] },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["groupBuyId", "userId", "quantity"]
     },
@@ -65,7 +67,8 @@
         "userId": { "type": "string" },
         "title": { "type": "string" },
         "message": { "type": "string" },
-        "read": { "type": "boolean" },
+        "link": { "type": "string" },
+        "isRead": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "title", "message"]

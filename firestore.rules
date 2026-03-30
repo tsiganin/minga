@@ -13,18 +13,19 @@ service cloud.firestore {
     //   - fullName: string - User full name
     //   - companyName: string - User company name
     //   - phone: string - User phone number
-    //   - role: string (required) - "user" or "admin"
+    //   - role: string (required) - "buyer", "supplier", or "admin"
     //   - points: number - User points
     //   - referralCode: string - User referral code
     //   - referredBy: string - User referred by code
+    //   - sector: string - User sector
+    //   - address: string - User address
+    //   - isActive: bool - User active status
     //   - createdAt: timestamp - Creation date
     //
     // Collection: groupBuys
     // Document ID: {groupBuyId}
     // Fields:
-    //   - id: string (required) - Group buy ID
-    //   - sellerId: string (required) - Seller UID
-    //   - sellerName: string - Seller name
+    //   - creatorId: string (required) - Creator UID
     //   - productName: string (required) - Product name
     //   - category: string (required) - Product category
     //   - description: string - Product description
@@ -32,31 +33,30 @@ service cloud.firestore {
     //   - unitPrice: number (required) - Unit price
     //   - targetQuantity: number (required) - Target quantity
     //   - currentQuantity: number - Current quantity
-    //   - images: list - Product images
+    //   - targetPrice: number - Target total price
+    //   - imagesBase64: string - JSON string of images
     //   - status: string - "active", "completed", "cancelled"
+    //   - deadline: timestamp - Expiration date
     //   - createdAt: timestamp - Creation date
-    //   - expiresAt: timestamp - Expiration date
     //
     // Collection: orders
     // Document ID: {orderId}
     // Fields:
-    //   - id: string (required) - Order ID
     //   - groupBuyId: string (required) - Group buy ID
     //   - userId: string (required) - User UID
-    //   - userName: string - User name
     //   - quantity: number (required) - Order quantity
-    //   - totalPrice: number - Total price
     //   - status: string - "pending", "confirmed", "cancelled"
     //   - createdAt: timestamp - Creation date
+    //   - updatedAt: timestamp - Last update date
     //
     // Collection: notifications
     // Document ID: {notificationId}
     // Fields:
-    //   - id: string (required) - Notification ID
     //   - userId: string (required) - User UID
     //   - title: string (required) - Notification title
     //   - message: string (required) - Notification message
-    //   - read: bool - Read status
+    //   - link: string - Notification link
+    //   - isRead: bool - Read status
     //   - createdAt: timestamp - Creation date
     //
     // ===============================================================
@@ -86,16 +86,16 @@ service cloud.firestore {
       return data.keys().hasAll(['uid', 'email', 'role']) &&
              data.uid is string &&
              data.email is string &&
-             data.role in ['user', 'admin'];
+             data.role in ['buyer', 'supplier', 'admin'];
     }
 
     function isValidGroupBuy(data) {
-      return data.keys().hasAll(['productName', 'category', 'unitPrice', 'targetQuantity', 'sellerId']) &&
+      return data.keys().hasAll(['productName', 'category', 'unitPrice', 'targetQuantity', 'creatorId']) &&
              data.productName is string && data.productName.size() > 0 && data.productName.size() < 200 &&
              data.category is string &&
              data.unitPrice is number && data.unitPrice > 0 &&
              data.targetQuantity is number && data.targetQuantity > 0 &&
-             data.sellerId is string;
+             data.creatorId is string;
     }
 
     function isValidOrder(data) {
@@ -117,7 +117,7 @@ service cloud.firestore {
     // ===============================================================
 
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
+      allow read: if isAuthenticated(); // Allow reading other users for notifications/suppliers check
       allow create: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isAdmin());
       allow update: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isAdmin()) && 
                     (request.resource.data.role == resource.data.role || isAdmin());
@@ -126,18 +126,18 @@ service cloud.firestore {
 
     match /groupBuys/{groupBuyId} {
       allow read: if true;
-      allow create: if isAuthenticated() && isValidGroupBuy(request.resource.data) && (request.resource.data.sellerId == request.auth.uid || isAdmin());
-      allow update: if isAuthenticated() && isValidGroupBuy(request.resource.data) && (resource.data.sellerId == request.auth.uid || isAdmin());
-      allow delete: if isAuthenticated() && (resource.data.sellerId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidGroupBuy(request.resource.data) && (request.resource.data.creatorId == request.auth.uid || isAdmin());
+      allow update: if isAuthenticated() && isValidGroupBuy(request.resource.data) && (resource.data.creatorId == request.auth.uid || isAdmin());
+      allow delete: if isAuthenticated() && (resource.data.creatorId == request.auth.uid || isAdmin());
     }
 
     match /orders/{orderId} {
       allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || 
-                   get(/databases/$(database)/documents/groupBuys/$(resource.data.groupBuyId)).data.sellerId == request.auth.uid || 
+                   get(/databases/$(database)/documents/groupBuys/$(resource.data.groupBuyId)).data.creatorId == request.auth.uid || 
                    isAdmin());
       allow create: if isAuthenticated() && isValidOrder(request.resource.data) && (request.resource.data.userId == request.auth.uid || isAdmin());
       allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || 
-                    get(/databases/$(database)/documents/groupBuys/$(resource.data.groupBuyId)).data.sellerId == request.auth.uid || 
+                    get(/databases/$(database)/documents/groupBuys/$(resource.data.groupBuyId)).data.creatorId == request.auth.uid || 
                     isAdmin());
       allow delete: if isAdmin();
     }
