@@ -49,12 +49,23 @@ export const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
+    let unsubscribeNotifications: (() => void) | null = null;
+
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (unsubscribeNotifications) {
+        unsubscribeNotifications();
+        unsubscribeNotifications = null;
+      }
+
       if (firebaseUser) {
         // Fetch user data from Firestore
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-        if (userDoc.exists()) {
-          setUser({ uid: firebaseUser.uid, ...userDoc.data() });
+        try {
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          if (userDoc.exists()) {
+            setUser({ uid: firebaseUser.uid, ...userDoc.data() });
+          }
+        } catch (err) {
+          console.error("Error fetching user data:", err);
         }
 
         // Listen for notifications
@@ -63,17 +74,30 @@ export const Navbar = () => {
           where('userId', '==', firebaseUser.uid),
           orderBy('createdAt', 'desc')
         );
-        const unsubscribeNotifications = onSnapshot(q, (snapshot) => {
+        unsubscribeNotifications = onSnapshot(q, (snapshot) => {
           setNotifications(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        }, (error) => {
+          const errInfo = {
+            error: error instanceof Error ? error.message : String(error),
+            operationType: 'get',
+            path: 'notifications',
+            authInfo: {
+              userId: auth.currentUser?.uid,
+              email: auth.currentUser?.email
+            }
+          };
+          console.error("Notifications listener error:", JSON.stringify(errInfo));
         });
-        return () => unsubscribeNotifications();
       } else {
         setUser(null);
         setNotifications([]);
       }
     });
 
-    return () => unsubscribeAuth();
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeNotifications) unsubscribeNotifications();
+    };
   }, []);
 
   const markAsRead = async (id: string) => {

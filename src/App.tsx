@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate, useLocation, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, Package, TrendingUp, Clock, LayoutGrid, Search, Users, Shield, Activity, Trash2, CheckCircle, XCircle, BarChart3, Mail, Edit, Upload, FileSpreadsheet, List, ArrowLeft, Eye, EyeOff, ArrowRight, Plus, Bell, LogOut, Settings, User as UserIcon } from 'lucide-react';
+import { ChevronDown, Package, TrendingUp, Clock, LayoutGrid, Search, Users, Shield, Activity, Trash2, CheckCircle, XCircle, BarChart3, Mail, Edit, Upload, FileSpreadsheet, List, ArrowLeft, Eye, EyeOff, ArrowRight, Plus, Bell, LogOut, Settings, User as UserIcon, Coins } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
-import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
+import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, increment, runTransaction, writeBatch, limit } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
@@ -49,6 +49,103 @@ const UNITS = [
   { value: 'palet', label: 'Palet' },
 ];
 
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    providerInfo: any[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): never {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: Error | null }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      let errorMessage = "Bir şeyler yanlış gitti.";
+      try {
+        if (this.state.error?.message) {
+          const parsed = JSON.parse(this.state.error.message);
+          if (parsed.error && parsed.error.includes('permission-denied')) {
+            errorMessage = "Bu işlemi yapmak için yetkiniz bulunmuyor. Lütfen giriş yaptığınızdan veya doğru hesabı kullandığınızdan emin olun.";
+          }
+        }
+      } catch (e) {
+        // Not a JSON error
+      }
+
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+          <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 text-center border border-slate-200">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <XCircle className="w-10 h-10" />
+            </div>
+            <h2 className="text-2xl font-black text-slate-900 mb-4">Hata Oluştu</h2>
+            <p className="text-slate-600 mb-8 font-medium">
+              {errorMessage}
+            </p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
+            >
+              Sayfayı Yenile
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 function formatPrice(price: number | string) {
   const num = typeof price === 'string' ? parseFloat(price) : price;
   if (isNaN(num)) return '0';
@@ -91,6 +188,35 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const handleGoogleLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      const firebaseUser = userCredential.user;
+      
+      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+      if (!userDoc.exists()) {
+        await setDoc(doc(db, 'users', firebaseUser.uid), {
+          email: firebaseUser.email,
+          role: firebaseUser.email === 'ozerbaser@gmail.com' ? 'admin' : 'buyer',
+          points: 0,
+          createdAt: serverTimestamp(),
+        });
+      } else if (firebaseUser.email === 'ozerbaser@gmail.com' && userDoc.data()?.role !== 'admin') {
+        await updateDoc(doc(db, 'users', firebaseUser.uid), { role: 'admin' });
+      }
+      
+      navigate('/');
+    } catch (err: any) {
+      setError('Google ile giriş yapılamadı.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -117,7 +243,11 @@ function LoginPage() {
       
       navigate('/');
     } catch (err: any) {
-      setError('Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.');
+      if (err.code === 'auth/operation-not-allowed') {
+        setError('E-posta/Şifre girişi şu anda devre dışı. Lütfen Firebase Console üzerinden etkinleştirin veya Google ile giriş yapın.');
+      } else {
+        setError('Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.');
+      }
       console.error(err);
     } finally {
       setLoading(false);
@@ -179,6 +309,25 @@ function LoginPage() {
           >
             {loading ? 'Giriş Yapılıyor...' : 'Giriş Yap'}
           </button>
+
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white text-slate-500 font-bold uppercase tracking-widest text-[10px]">Veya</span>
+            </div>
+          </div>
+
+          <button 
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full bg-white border-2 border-slate-200 text-slate-700 py-4 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-slate-50 hover:border-blue-200 transition-all disabled:opacity-50"
+          >
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+            Google ile Giriş Yap
+          </button>
         </form>
 
         <p className="text-center mt-10 text-slate-500 font-medium text-lg">
@@ -205,6 +354,35 @@ function RegisterPage() {
   // Get referral code from URL
   const queryParams = new URLSearchParams(location.search);
   const referredBy = queryParams.get('ref');
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      const firebaseUser = userCredential.user;
+      
+      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+      if (!userDoc.exists()) {
+        await setDoc(doc(db, 'users', firebaseUser.uid), {
+          email: firebaseUser.email,
+          role: firebaseUser.email === 'ozerbaser@gmail.com' ? 'admin' : 'buyer',
+          points: 0,
+          createdAt: serverTimestamp(),
+        });
+      } else if (firebaseUser.email === 'ozerbaser@gmail.com' && userDoc.data()?.role !== 'admin') {
+        await updateDoc(doc(db, 'users', firebaseUser.uid), { role: 'admin' });
+      }
+      
+      navigate('/');
+    } catch (err: any) {
+      setError('Google ile giriş yapılamadı.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -268,7 +446,11 @@ function RegisterPage() {
       await setDoc(doc(db, 'users', firebaseUser.uid), userData);
       navigate('/');
     } catch (err: any) {
-      setError(err.message);
+      if (err.code === 'auth/operation-not-allowed') {
+        setError('E-posta/Şifre kaydı şu anda devre dışı. Lütfen Firebase Console üzerinden etkinleştirin veya Google ile giriş yapın.');
+      } else {
+        setError(err.message);
+      }
       console.error(err);
     } finally {
       setLoading(false);
@@ -406,6 +588,25 @@ function RegisterPage() {
 
                 <button type="submit" disabled={loading} className={`w-full py-4 rounded-2xl font-black text-white text-lg transition-all shadow-xl mt-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] ${role === 'supplier' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-100' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-100'}`}>
                   {loading ? 'Kayıt Yapılıyor...' : 'Hesap Oluştur'}
+                </button>
+
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-200"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-4 bg-white text-slate-500 font-bold uppercase tracking-widest text-[10px]">Veya</span>
+                  </div>
+                </div>
+
+                <button 
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={loading}
+                  className="w-full bg-white border-2 border-slate-200 text-slate-700 py-4 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-slate-50 hover:border-blue-200 transition-all disabled:opacity-50"
+                >
+                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+                  Google ile Kayıt Ol
                 </button>
               </>
             )}
@@ -569,6 +770,8 @@ function HomePage() {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setGroupBuys(data);
       setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'groupBuys');
     });
 
     // Listen for user role
@@ -840,6 +1043,8 @@ function GroupBuyPage() {
       
       setGroupBuys(filteredData);
       setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'groupBuys');
     });
 
     return () => unsubscribe();
@@ -1249,6 +1454,8 @@ function GroupBuyDetailPage() {
         setGb(null);
       }
       setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `groupBuys/${id}`);
     });
 
     // Listen for user and their order
@@ -1270,6 +1477,8 @@ function GroupBuyDetailPage() {
           } else {
             setExistingOrder(null);
           }
+        }, (error) => {
+          handleFirestoreError(error, OperationType.GET, 'orders');
         });
         return () => unsubscribeOrder();
       } else {
@@ -1979,10 +2188,10 @@ function AdminDashboard() {
     setLoading(true);
     try {
       if (activeTab === 'overview') {
-        const usersSnap = await getDocs(collection(db, 'users'));
-        const gbsSnap = await getDocs(collection(db, 'groupBuys'));
-        const ordersSnap = await getDocs(collection(db, 'orders'));
-        const catsSnap = await getDocs(collection(db, 'categories'));
+        const usersSnap = await getDocs(collection(db, 'users')).catch(err => handleFirestoreError(err, OperationType.LIST, 'users'));
+        const gbsSnap = await getDocs(collection(db, 'groupBuys')).catch(err => handleFirestoreError(err, OperationType.LIST, 'groupBuys'));
+        const ordersSnap = await getDocs(collection(db, 'orders')).catch(err => handleFirestoreError(err, OperationType.LIST, 'orders'));
+        const catsSnap = await getDocs(collection(db, 'categories')).catch(err => handleFirestoreError(err, OperationType.LIST, 'categories'));
         
         const usersData = usersSnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
         const gbsData = gbsSnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
@@ -2019,13 +2228,44 @@ function AdminDashboard() {
           return { name: cat.name, value: count };
         }).filter(c => c.value > 0);
 
+        // Additional Analytics
+        const totalPotentialRevenue = gbsData
+          .filter(gb => gb.status === 'active')
+          .reduce((sum, gb) => sum + (gb.targetPrice || 0), 0);
+
+        const totalCollectedRevenue = ordersData
+          .reduce((sum, order) => sum + (order.totalPrice || 0), 0);
+
+        const topGroupBuys = gbsData
+          .map(gb => {
+            const orderCount = ordersData.filter(o => o.groupBuyId === gb.id).length;
+            const totalQty = ordersData.filter(o => o.groupBuyId === gb.id).reduce((s, o) => s + (o.quantity || 0), 0);
+            const progress = gb.targetQuantity > 0 ? (totalQty / gb.targetQuantity) * 100 : 0;
+            return { ...gb, orderCount, totalQty, progress };
+          })
+          .sort((a, b) => b.orderCount - a.orderCount)
+          .slice(0, 5);
+
+        const categoryPerformance = catsData.map(cat => {
+          const catOrders = ordersData.filter(o => {
+            const gb = gbsData.find(g => g.id === o.groupBuyId);
+            return gb && (gb.category === cat.name || gb.category === cat.id);
+          });
+          const revenue = catOrders.reduce((s, o) => s + (o.totalPrice || 0), 0);
+          return { name: cat.name, revenue, orders: catOrders.length };
+        }).sort((a, b) => b.revenue - a.revenue).filter(c => c.orders > 0);
+
         setStats({
           totalUsers: usersSnap.size,
           totalGroupBuys: gbsSnap.size,
           activeGroupBuys: gbsSnap.docs.filter(d => d.data().status === 'active').length,
           totalOrders: ordersSnap.size,
+          totalPotentialRevenue,
+          totalCollectedRevenue,
           dailyStats,
-          gbByCategory
+          gbByCategory,
+          topGroupBuys,
+          categoryPerformance
         });
       } else if (activeTab === 'users') {
         const snapshot = await getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc')));
@@ -2187,6 +2427,8 @@ function AdminDashboard() {
                     { label: 'Toplam İlan', value: stats.totalGroupBuys, icon: Package, color: 'text-indigo-600', bg: 'bg-indigo-100', tab: 'group-buys' },
                     { label: 'Aktif İlanlar', value: stats.activeGroupBuys, icon: Activity, color: 'text-emerald-600', bg: 'bg-emerald-100', tab: 'group-buys' },
                     { label: 'Toplam Sipariş', value: stats.totalOrders, icon: Shield, color: 'text-rose-600', bg: 'bg-rose-100', tab: 'overview' },
+                    { label: 'Potansiyel Ciro', value: stats.totalPotentialRevenue.toLocaleString('tr-TR') + ' TL', icon: Coins, color: 'text-amber-600', bg: 'bg-amber-100', tab: 'overview' },
+                    { label: 'Toplanan Ciro', value: stats.totalCollectedRevenue.toLocaleString('tr-TR') + ' TL', icon: Coins, color: 'text-orange-600', bg: 'bg-orange-100', tab: 'overview' },
                   ].map((stat, i) => (
                     <div 
                       key={i} 
@@ -2234,7 +2476,7 @@ function AdminDashboard() {
 
                   {/* Categories Distribution */}
                   <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
-                    <h3 className="text-xl font-black text-slate-900 mb-6">Kategori Dağılımı</h3>
+                    <h3 className="text-xl font-black text-slate-900 mb-6">Kategori Dağılımı (İlan Sayısı)</h3>
                     <div className="h-[300px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
@@ -2243,7 +2485,7 @@ function AdminDashboard() {
                             cx="50%"
                             cy="50%"
                             innerRadius={60}
-                            outerRadius={100}
+                            outerRadius={80}
                             paddingAngle={5}
                             dataKey="value"
                           >
@@ -2252,11 +2494,67 @@ function AdminDashboard() {
                             ))}
                           </Pie>
                           <Tooltip 
-                            contentStyle={{borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
+                            contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                            itemStyle={{ fontWeight: 'bold' }}
                           />
                           <Legend verticalAlign="bottom" height={36}/>
                         </PieChart>
                       </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Category Performance Bar Chart */}
+                  <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+                    <h3 className="text-xl font-black text-slate-900 mb-6">Kategori Performansı (Ciro TL)</h3>
+                    <div className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={stats.categoryPerformance}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                          <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} />
+                          <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} />
+                          <Tooltip 
+                            cursor={{ fill: '#f8fafc' }}
+                            contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                          />
+                          <Bar dataKey="revenue" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Top Performing Group Buys */}
+                  <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+                    <h3 className="text-xl font-black text-slate-900 mb-6">En Popüler İlanlar</h3>
+                    <div className="space-y-4">
+                      {stats.topGroupBuys.map((gb: any) => (
+                        <div key={gb.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl overflow-hidden border border-white shadow-sm">
+                              <img 
+                                src={gb.imagesBase64 ? JSON.parse(gb.imagesBase64)[0] : 'https://picsum.photos/seed/product/100/100'} 
+                                alt={gb.productName} 
+                                className="w-full h-full object-cover"
+                                referrerPolicy="no-referrer"
+                              />
+                            </div>
+                            <div>
+                              <p className="font-black text-slate-900 text-sm line-clamp-1">{gb.productName}</p>
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{gb.orderCount} Sipariş</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden mb-1">
+                              <div 
+                                className="h-full bg-blue-600 transition-all duration-500" 
+                                style={{ width: `${Math.min(gb.progress, 100)}%` }}
+                              />
+                            </div>
+                            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">%{Math.round(gb.progress)} Doluluk</p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -2842,9 +3140,22 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         // Get user profile from Firestore
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-        if (userDoc.exists()) {
-          setUser({ ...firebaseUser, ...userDoc.data() });
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        let userData = userDoc.exists() ? userDoc.data() : null;
+
+        // Force admin role for this specific user
+        if (firebaseUser.email === 'ozerbaser@gmail.com') {
+          if (!userData || userData.role !== 'admin') {
+            const updatedData = { ...userData, role: 'admin', email: firebaseUser.email };
+            await setDoc(userDocRef, updatedData, { merge: true });
+            userData = updatedData;
+          }
+        }
+
+        if (userData) {
+          setUser({ ...firebaseUser, ...userData });
         } else {
           setUser(firebaseUser);
         }
@@ -2869,20 +3180,22 @@ export default function App() {
   }
 
   return (
-    <Router>
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/my-listings" element={<MyListingsPage />} />
-        <Route path="/group-buys" element={<GroupBuyPage />} />
-        <Route path="/group-buys/create" element={<CreateGroupBuyPage />} />
-        <Route path="/group-buys/:id" element={<GroupBuyDetailPage />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/my-listings" element={<MyListingsPage />} />
+          <Route path="/group-buys" element={<GroupBuyPage />} />
+          <Route path="/group-buys/create" element={<CreateGroupBuyPage />} />
+          <Route path="/group-buys/:id" element={<GroupBuyDetailPage />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </Router>
+    </ErrorBoundary>
   );
 }
