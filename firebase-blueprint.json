@@ -1,8 +1,8 @@
 {
   "entities": {
     "User": {
-      "title": "User",
-      "description": "User profile and account information",
+      "title": "Kullanıcı",
+      "description": "Kullanıcı profili ve hesap bilgileri",
       "type": "object",
       "properties": {
         "uid": { "type": "string", "description": "Firebase Auth UID" },
@@ -22,8 +22,8 @@
       "required": ["uid", "email", "role"]
     },
     "GroupBuy": {
-      "title": "GroupBuy",
-      "description": "A group buy listing or auction",
+      "title": "GrupAlımı",
+      "description": "Bir grup alımı ilanı veya açık artırma",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -44,8 +44,8 @@
       "required": ["productName", "category", "unitPrice", "targetQuantity", "creatorId"]
     },
     "Order": {
-      "title": "Order",
-      "description": "A user's participation in a group buy",
+      "title": "Sipariş",
+      "description": "Bir kullanıcının grup alımına katılımı",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -59,8 +59,8 @@
       "required": ["groupBuyId", "userId", "quantity"]
     },
     "Notification": {
-      "title": "Notification",
-      "description": "System notifications for users",
+      "title": "Bildirim",
+      "description": "Kullanıcılar için sistem bildirimleri",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -74,8 +74,8 @@
       "required": ["userId", "title", "message"]
     },
     "Category": {
-      "title": "Category",
-      "description": "Product categories",
+      "title": "Kategori",
+      "description": "Ürün kategorileri",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -90,23 +90,23 @@
   "firestore": {
     "/users/{userId}": {
       "schema": "User",
-      "description": "User profiles"
+      "description": "Kullanıcı profilleri"
     },
     "/groupBuys/{groupBuyId}": {
       "schema": "GroupBuy",
-      "description": "Group buy listings"
+      "description": "Grup alımı ilanları"
     },
     "/orders/{orderId}": {
       "schema": "Order",
-      "description": "User orders"
+      "description": "Kullanıcı siparişleri"
     },
     "/notifications/{notificationId}": {
       "schema": "Notification",
-      "description": "User notifications"
+      "description": "Kullanıcı bildirimleri"
     },
     "/categories/{categoryId}": {
       "schema": "Category",
-      "description": "Product categories"
+      "description": "Ürün kategorileri"
     }
   }
 }

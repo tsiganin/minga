@@ -16,19 +16,6 @@ import { format, subDays, startOfDay, endOfDay, eachDayOfInterval } from 'date-f
 import { tr } from 'date-fns/locale';
 
 import { Navbar } from "@/src/components/layout/Navbar";
-import { HeroSection } from "@/src/components/layout/sections/HeroSection";
-import { SponsorsSection } from "@/src/components/layout/sections/SponsorsSection";
-import { BenefitsSection } from "@/src/components/layout/sections/BenefitsSection";
-import { FeaturesSection } from "@/src/components/layout/sections/FeaturesSection";
-import { ServicesSection } from "@/src/components/layout/sections/ServicesSection";
-import { TestimonialSection } from "@/src/components/layout/sections/TestimonialSection";
-import { TeamSection } from "@/src/components/layout/sections/TeamSection";
-import { CommunitySection } from "@/src/components/layout/sections/CommunitySection";
-import { PricingSection } from "@/src/components/layout/sections/PricingSection";
-import { ContactSection } from "@/src/components/layout/sections/ContactSection";
-import { FAQSection } from "@/src/components/layout/sections/FAQSection";
-import { FooterSection } from "@/src/components/layout/sections/FooterSection";
-
 
 const SECTORS = [
   'Tekstil & Hazır Giyim', 'Elektronik & Teknoloji', 'Gıda & İçecek',
@@ -823,7 +810,7 @@ function HomePage() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         onClick={() => navigate(`/group-buys/${gb.id}`)} 
-        className="glass-card rounded-[2.5rem] overflow-hidden group cursor-pointer transition-all duration-500 hover:-translate-y-2"
+        className="bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden group cursor-pointer transition-all duration-500 hover:shadow-xl hover:-translate-y-1"
       >
         {firstImage && (
           <div className="aspect-[16/10] w-full overflow-hidden relative">
@@ -848,10 +835,10 @@ function HomePage() {
             </span>
           </div>
           
-          <h3 className="text-2xl font-display font-black text-slate-900 mb-3 group-hover:text-blue-600 transition-colors line-clamp-1">{gb.productName}</h3>
+          <h3 className="text-2xl font-sans font-black text-slate-900 mb-3 group-hover:text-blue-600 transition-colors line-clamp-1">{gb.productName}</h3>
           
           <div className="flex items-baseline gap-1.5 mb-8">
-            <span className="text-3xl font-display font-black text-slate-900 tracking-tight">{gb.unitPrice}₺</span>
+            <span className="text-3xl font-sans font-black text-slate-900 tracking-tight">{gb.unitPrice}₺</span>
             <span className="text-slate-400 font-bold text-sm">/ {gb.unit}</span>
           </div>
 
@@ -859,7 +846,7 @@ function HomePage() {
             <div className="space-y-2.5">
               <div className="flex justify-between items-end">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Toplanan Miktar</span>
-                <span className="text-blue-600 font-display font-black text-lg">%{Math.min(100, Math.round(progress))}</span>
+                <span className="text-blue-600 font-sans font-black text-lg">%{Math.min(100, Math.round(progress))}</span>
               </div>
               <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-200/50">
                 <motion.div 
@@ -896,22 +883,20 @@ function HomePage() {
 
   return (
     <div className="min-h-screen bg-background text-slate-900 font-sans">
-      {!currentUser && <HeroSection />}
-      
-      <div id="listings" className={`max-w-7xl mx-auto px-6 lg:px-10 py-12 ${currentUser ? 'pt-28' : ''}`}>
+      <div id="listings" className={`max-w-7xl mx-auto px-6 lg:px-10 py-12 ${currentUser ? 'pt-28' : 'pt-32'}`}>
         {currentUser && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20">
             <motion.div 
               whileHover={{ y: -8 }}
               onClick={() => navigate('/group-buys')}
-              className="glass-card rounded-[3rem] p-10 md:p-14 cursor-pointer group relative overflow-hidden"
+              className="bg-white border border-slate-200 rounded-[3rem] p-10 md:p-14 cursor-pointer group relative overflow-hidden shadow-sm hover:shadow-xl transition-all"
             >
               <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 rounded-full -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-700" />
               <div className="relative z-10">
                 <div className="w-20 h-20 bg-blue-600 rounded-[2rem] flex items-center justify-center mb-10 shadow-2xl shadow-blue-600/30 group-hover:rotate-6 transition-transform">
                   <Search className="text-white w-10 h-10" />
                 </div>
-                <h2 className="text-4xl md:text-5xl font-display font-black text-slate-900 mb-6 tracking-tight">İlanları Keşfet</h2>
+                <h2 className="text-4xl md:text-5xl font-sans font-black text-slate-900 mb-6 tracking-tight">İlanları Keşfet</h2>
                 <p className="text-slate-500 text-lg md:text-xl font-medium mb-10 leading-relaxed max-w-md">Aktif grup alımlarını inceleyin, toplu alım gücüne hemen ortak olun.</p>
                 <div className="flex items-center gap-3 text-blue-600 font-black text-lg group-hover:gap-5 transition-all">
                   <span>Keşfetmeye Başla</span>
@@ -923,14 +908,14 @@ function HomePage() {
             <motion.div 
               whileHover={{ y: -8 }}
               onClick={() => navigate('/group-buys/create')}
-              className="glass-card rounded-[3rem] p-10 md:p-14 cursor-pointer group relative overflow-hidden"
+              className="bg-white border border-slate-200 rounded-[3rem] p-10 md:p-14 cursor-pointer group relative overflow-hidden shadow-sm hover:shadow-xl transition-all"
             >
               <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-600/5 rounded-full -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-700" />
               <div className="relative z-10">
                 <div className="w-20 h-20 bg-emerald-600 rounded-[2rem] flex items-center justify-center mb-10 shadow-2xl shadow-emerald-600/30 group-hover:rotate-6 transition-transform">
                   <Plus className="text-white w-10 h-10" />
                 </div>
-                <h2 className="text-4xl md:text-5xl font-display font-black text-slate-900 mb-6 tracking-tight">İlan Başlat</h2>
+                <h2 className="text-4xl md:text-5xl font-sans font-black text-slate-900 mb-6 tracking-tight">İlan Başlat</h2>
                 <p className="text-slate-500 text-lg md:text-xl font-medium mb-10 leading-relaxed max-w-md">Kendi ürününüz için grup alımı başlatın, binlerce alıcıya tek seferde ulaşın.</p>
                 <div className="flex items-center gap-3 text-emerald-600 font-black text-lg group-hover:gap-5 transition-all">
                   <span>Kampanya Başlat</span>
@@ -981,19 +966,6 @@ function HomePage() {
           )}
         </div>
       </div>
-
-      {!currentUser && (
-        <>
-          <BenefitsSection />
-          <FeaturesSection />
-          <ServicesSection />
-          <TestimonialSection />
-          <PricingSection />
-          <FAQSection />
-          <ContactSection />
-        </>
-      )}
-      <FooterSection />
     </div>
   );
 }
@@ -2163,7 +2135,7 @@ function AdminDashboard() {
         if (userDoc.exists()) {
           const userData = userDoc.data();
           setCurrentUser({ uid: user.uid, ...userData });
-          if (userData.role !== 'admin') {
+          if (userData.role !== 'admin' && user.email !== 'ozerbaser@gmail.com') {
             navigate('/');
           } else {
             fetchData();

@@ -25,18 +25,6 @@ const routeList: RouteProps[] = [
     href: "/group-buys",
     label: "İlanlar",
   },
-  {
-    href: "/#features",
-    label: "Özellikler",
-  },
-  {
-    href: "/#pricing",
-    label: "Fiyatlandırma",
-  },
-  {
-    href: "/#faq",
-    label: "SSS",
-  },
 ];
 
 export const Navbar = () => {
@@ -129,11 +117,11 @@ export const Navbar = () => {
   return (
     <header className="fixed top-0 z-50 w-full px-4 pt-4">
       <div className="max-w-7xl mx-auto">
-        <div className="glass-card rounded-3xl border border-white/20 shadow-2xl shadow-blue-900/5 px-6 h-20 flex items-center justify-between">
+        <div className="bg-white border border-slate-200 shadow-lg px-6 h-20 flex items-center justify-between rounded-3xl">
           <div className="flex items-center gap-10">
             <Link
               to="/"
-              className="font-display font-black text-2xl flex items-center tracking-tighter no-underline text-slate-900"
+              className="font-sans font-black text-2xl flex items-center tracking-tighter no-underline text-slate-900"
             >
               <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center mr-3 shadow-lg shadow-blue-200">
                 <span className="text-white text-xl">M</span>
@@ -228,7 +216,7 @@ export const Navbar = () => {
                   </AnimatePresence>
                 </div>
 
-                {user.role === 'admin' && (
+                {(user.role === 'admin' || user.email === 'ozerbaser@gmail.com') && (
                   <Link to="/admin" className="p-2.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
                     <Shield className="h-5 w-5" />
                   </Link>
@@ -263,7 +251,7 @@ export const Navbar = () => {
               <SheetContent side="right" className="w-full sm:max-w-md border-l-0 p-0">
                 <div className="h-full flex flex-col p-8">
                   <SheetHeader className="mb-12">
-                    <SheetTitle className="text-left font-display font-black text-3xl tracking-tighter flex items-center">
+                    <SheetTitle className="text-left font-sans font-black text-3xl tracking-tighter flex items-center">
                       <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center mr-3">
                         <span className="text-white text-xl">M</span>
                       </div>
