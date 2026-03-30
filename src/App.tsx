@@ -200,12 +200,10 @@ function LoginPage() {
       if (!userDoc.exists()) {
         await setDoc(doc(db, 'users', firebaseUser.uid), {
           email: firebaseUser.email,
-          role: firebaseUser.email === 'ozerbaser@gmail.com' ? 'admin' : 'buyer',
+          role: 'buyer',
           points: 0,
           createdAt: serverTimestamp(),
         });
-      } else if (firebaseUser.email === 'ozerbaser@gmail.com' && userDoc.data()?.role !== 'admin') {
-        await updateDoc(doc(db, 'users', firebaseUser.uid), { role: 'admin' });
       }
       
       navigate('/');
@@ -232,13 +230,10 @@ function LoginPage() {
         // This shouldn't happen with new users, but for existing ones during migration
         await setDoc(doc(db, 'users', firebaseUser.uid), {
           email: firebaseUser.email,
-          role: firebaseUser.email === 'ozerbaser@gmail.com' ? 'admin' : 'buyer',
+          role: 'buyer',
           points: 0,
           createdAt: serverTimestamp(),
         });
-      } else if (firebaseUser.email === 'ozerbaser@gmail.com' && userDoc.data()?.role !== 'admin') {
-        // Force admin role for this specific user if it's not set
-        await updateDoc(doc(db, 'users', firebaseUser.uid), { role: 'admin' });
       }
       
       navigate('/');
@@ -367,12 +362,10 @@ function RegisterPage() {
       if (!userDoc.exists()) {
         await setDoc(doc(db, 'users', firebaseUser.uid), {
           email: firebaseUser.email,
-          role: firebaseUser.email === 'ozerbaser@gmail.com' ? 'admin' : 'buyer',
+          role: 'buyer',
           points: 0,
           createdAt: serverTimestamp(),
         });
-      } else if (firebaseUser.email === 'ozerbaser@gmail.com' && userDoc.data()?.role !== 'admin') {
-        await updateDoc(doc(db, 'users', firebaseUser.uid), { role: 'admin' });
       }
       
       navigate('/');
@@ -3251,15 +3244,6 @@ export default function App() {
         const userDoc = await getDoc(userDocRef);
         
         let userData = userDoc.exists() ? userDoc.data() : null;
-
-        // Force admin role for this specific user
-        if (firebaseUser.email === 'ozerbaser@gmail.com') {
-          if (!userData || userData.role !== 'admin') {
-            const updatedData = { ...userData, role: 'admin', email: firebaseUser.email };
-            await setDoc(userDocRef, updatedData, { merge: true });
-            userData = updatedData;
-          }
-        }
 
         if (userData) {
           setUser({ ...firebaseUser, ...userData });
